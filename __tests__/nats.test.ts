@@ -5,15 +5,12 @@ import { init } from '../lib';
 
 beforeAll(async () => {
   let server = {
-    servers: ""
+    servers: '',
   };
-})
+});
 
-describe('init', () =>{
+describe('init', () => {
   let natsSpy: jest.SpyInstance;
 
-  beforeEach(() => {
-    
-    
-  })
-})
+  beforeEach(() => {});
+});
