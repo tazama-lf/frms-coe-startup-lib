@@ -92,6 +92,14 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
   return true;
 }
 
+/**
+ * Initialise a Jetstream connection, and plublish message to the environmental producer stream.
+ *
+ * @export
+ * @param {unknown} data Data to be send to Publish stream. String or JSON prefered.
+ *
+ * @return {*}  {Promise<void>}
+ */
 export async function sendMessage(data: unknown): Promise<void> {
   // Establish Connection to Nats Server
   const natsConn = await connect(server);
@@ -160,6 +168,14 @@ async function createStream(jsm: JetStreamManager, streamName: string): Promise<
   );
 }
 
+/**
+ * Handle the response once the function executed by onMessage is complete. Publish it to the Producer Stream
+ *
+ * @export
+ * @param {string} response Response string to be send to the producer stream.
+ *
+ * @return {*}  {Promise<void>}
+ */
 export async function handleResponse(response: string): Promise<void> {
   const sc = StringCodec();
   if (producerStreamName) await js.publish(producerStreamName, sc.encode(response));
