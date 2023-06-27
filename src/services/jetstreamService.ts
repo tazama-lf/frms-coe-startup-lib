@@ -10,7 +10,7 @@ import {
   type NatsConnection,
   type StreamConfig,
 } from 'nats';
-import { startupConfig } from '../interfaces/StartupConfig';
+import { startupConfig } from '../interfaces/iStartupConfig';
 import { type onMessageFunction } from '../types/onMessageFunction';
 import { type ILoggerService } from '../interfaces';
 
@@ -76,7 +76,7 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
 
     // Add producer streams
     producerStreamName = startupConfig.producerStreamName; // `RuleResponse${functionName}`;
-    await createProducer(jsm);
+    await createStream(jsm, producerStreamName);
 
     logger.log(`created the stream with functionName ${functionName}`);
     js = natsConn.jetstream();
@@ -86,7 +86,6 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
     // close the connection
     await closeConnection(natsConn, done);
   } catch (err) {
-    logger.log(`Error communicating with NATS on: ${JSON.stringify(server)}, with error: ${JSON.stringify(err)}`);
     throw err;
   }
   return true;
@@ -101,11 +100,8 @@ export async function sendMessage(data: unknown): Promise<void> {
   const jsm = await natsConn.jetstreamManager();
 
   const functionName = startupConfig.functionName.replace(/\./g, '_');
-  producerStreamName = startupConfig.producerStreamName; // output
-  // consumerStreamName = startupConfig.consumerStreamName; // input
-
-  await createProducer(jsm);
-  // await createConsumer(functionName, jsm, consumerStreamName);
+  producerStreamName = startupConfig.producerStreamName;
+  await createStream(jsm, producerStreamName);
 
   logger.log(`created the stream with functionName ${functionName}`);
   const js = natsConn.jetstream();
@@ -132,16 +128,18 @@ async function validateEnvironment(): Promise<void> {
 }
 
 async function createConsumer(functionName: string, jsm: JetStreamManager, consumerStreamName: string): Promise<void> {
+  await createStream(jsm, consumerStreamName);
   const typedAckPolicy = startupConfig.ackPolicy;
   const consumerCfg: Partial<ConsumerConfig> = {
     ack_policy: AckPolicy[typedAckPolicy],
     durable_name: functionName,
   };
   await jsm.consumers.add(consumerStreamName, consumerCfg);
+  logger.log('Connected Consumer to Consumer Stream')
 }
 
-async function createProducer(jsm: JetStreamManager): Promise<void> {
-  await jsm.streams.find(producerStreamName).then(
+async function createStream(jsm: JetStreamManager, streamName: string): Promise<void> {
+  await jsm.streams.find(streamName).then(
     (s) => {
       logger.log('Producer stream already exists');
     },
@@ -150,8 +148,8 @@ async function createProducer(jsm: JetStreamManager): Promise<void> {
       const typedStorgage = startupConfig.producerStorage as keyof typeof StorageType;
 
       const cfg: Partial<StreamConfig> = {
-        name: producerStreamName,
-        subjects: [producerStreamName],
+        name: streamName,
+        subjects: [streamName],
         retention: RetentionPolicy[typedRetentionPolicy],
         storage: StorageType[typedStorgage],
       };
