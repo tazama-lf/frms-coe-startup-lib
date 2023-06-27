@@ -12,6 +12,7 @@ import {
 } from 'nats';
 import { startupConfig } from '../interfaces/StartupConfig';
 import { type onMessageFunction } from '../types/onMessageFunction';
+import { type ILoggerService } from '../interfaces';
 
 const server = {
   servers: startupConfig.serverUrl,
@@ -29,6 +30,7 @@ async function closeConnection(nc: NatsConnection, done: Promise<unknown | Error
 let producerStreamName: string;
 let consumerStreamName: string;
 let js: JetStreamClient;
+let logger: ILoggerService | Console;
 
 /**
  * Initialize JetStream consumer, supplying a callback function to call every time a new message comes in.
@@ -46,14 +48,20 @@ let js: JetStreamClient;
  * @return {*}  {Promise<boolean>}
  */
 
-export async function init(onMessage: onMessageFunction): Promise<boolean> {
+export async function init(onMessage: onMessageFunction, loggerService?: ILoggerService): Promise<boolean> {
+  if (loggerService) {
+    logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
+  } else {
+    logger = console;
+  }
+
   try {
     // Validate Environmental Variables.
     await validateEnvironment();
 
     // Connect to NATS Server
     const natsConn = await connect(server);
-    console.log(`Connected to ${natsConn.getServer()}`);
+    logger.log(`Connected to ${natsConn.getServer()}`);
 
     // this promise indicates the client closed
     const done = natsConn.closed();
@@ -70,15 +78,15 @@ export async function init(onMessage: onMessageFunction): Promise<boolean> {
     producerStreamName = startupConfig.producerStreamName; // `RuleResponse${functionName}`;
     await createProducer(jsm);
 
-    console.log(`created the stream with functionName ${functionName}`);
+    logger.log(`created the stream with functionName ${functionName}`);
     js = natsConn.jetstream();
 
     if (consumerStreamName) await consume(js, onMessage, consumerStreamName, functionName);
-    console.log('Consumer subscription closed');
+    logger.log('Consumer subscription closed');
     // close the connection
     await closeConnection(natsConn, done);
   } catch (err) {
-    console.log(`Error communicating with NATS on: ${JSON.stringify(server)}, with error: ${JSON.stringify(err)}`);
+    logger.log(`Error communicating with NATS on: ${JSON.stringify(server)}, with error: ${JSON.stringify(err)}`);
     throw err;
   }
   return true;
@@ -87,19 +95,19 @@ export async function init(onMessage: onMessageFunction): Promise<boolean> {
 export async function sendMessage(data: unknown): Promise<void> {
   // Establish Connection to Nats Server
   const natsConn = await connect(server);
-  console.log(`connected to ${natsConn.getServer()}`);
+  logger.log(`connected to ${natsConn.getServer()}`);
 
   // Jetstream setup
   const jsm = await natsConn.jetstreamManager();
 
   const functionName = startupConfig.functionName.replace(/\./g, '_');
   producerStreamName = startupConfig.producerStreamName; // output
-  consumerStreamName = startupConfig.consumerStreamName; // input
+  // consumerStreamName = startupConfig.consumerStreamName; // input
 
   await createProducer(jsm);
-  await createConsumer(functionName, jsm, consumerStreamName);
+  // await createConsumer(functionName, jsm, consumerStreamName);
 
-  console.log(`created the stream with functionName ${functionName}`);
+  logger.log(`created the stream with functionName ${functionName}`);
   const js = natsConn.jetstream();
 
   const sc = StringCodec();
@@ -135,7 +143,7 @@ async function createConsumer(functionName: string, jsm: JetStreamManager, consu
 async function createProducer(jsm: JetStreamManager): Promise<void> {
   await jsm.streams.find(producerStreamName).then(
     (s) => {
-      console.log('Producer stream already exists');
+      logger.log('Producer stream already exists');
     },
     async (reason) => {
       const typedRetentionPolicy = startupConfig.producerRetentionPolicy as keyof typeof RetentionPolicy;
@@ -148,7 +156,7 @@ async function createProducer(jsm: JetStreamManager): Promise<void> {
         storage: StorageType[typedStorgage],
       };
       await jsm.streams.add(cfg);
-      console.log('Created the producer stream');
+      logger.log('Created the producer stream');
     },
   );
 }
