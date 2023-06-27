@@ -1,2 +1,2 @@
-export type { IStartupConfig } from './StartupConfig';
-export type { ILoggerService } from './LoggerService';
+export type { IStartupConfig } from './iStartupConfig';
+export type { ILoggerService } from './iLoggerService';

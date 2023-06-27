@@ -86,6 +86,7 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
     // close the connection
     await closeConnection(natsConn, done);
   } catch (err) {
+    logger.log(`Error communicating with NATS on: ${JSON.stringify(server)}, with error: ${JSON.stringify(err)}`);
     throw err;
   }
   return true;
@@ -135,7 +136,7 @@ async function createConsumer(functionName: string, jsm: JetStreamManager, consu
     durable_name: functionName,
   };
   await jsm.consumers.add(consumerStreamName, consumerCfg);
-  logger.log('Connected Consumer to Consumer Stream')
+  logger.log('Connected Consumer to Consumer Stream');
 }
 
 async function createStream(jsm: JetStreamManager, streamName: string): Promise<void> {
