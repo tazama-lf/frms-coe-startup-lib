@@ -76,6 +76,6 @@ export const startupConfig: IStartupConfig = {
   producerStreamName: process.env.PRODUCER_STREAM as string,
   consumerStreamName: process.env.CONSUMER_STREAM as string,
   producerRetentionPolicy: process.env.FUNCTION_NAME as string,
-  ackPolicy: 'None',
-  producerStorage: '',
+  ackPolicy: (process.env.ACK_POLICY as 'None' | 'All' | 'Explicit' | 'NotSet') || 'None',
+  producerStorage: (process.env.PRODUCER_STORAGE as string) || '',
 };
