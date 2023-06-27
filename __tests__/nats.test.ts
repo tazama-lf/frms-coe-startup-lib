@@ -1,8 +1,8 @@
 // redis and aragojs is mocked
-// setup.jest.js
+// setup.jest.js.
 
-import { init } from '../lib';
-import { responseCallback } from '../lib/types/onMessageFunction';
+import { init } from '../src';
+import { type responseCallback } from '../src/types/onMessageFunction';
 
 beforeAll(async () => {
   let server = {
