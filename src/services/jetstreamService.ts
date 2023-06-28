@@ -143,20 +143,28 @@ async function validateEnvironment(): Promise<void> {
 }
 
 async function createConsumer(functionName: string, jsm: JetStreamManager, consumerStreamName: string): Promise<void> {
-  await createStream(jsm, consumerStreamName);
+  await createStream(jsm, consumerStreamName, startupConfig.streamSubject ? startupConfig.streamSubject : undefined);
   const typedAckPolicy = startupConfig.ackPolicy;
   const consumerCfg: Partial<ConsumerConfig> = {
     ack_policy: AckPolicy[typedAckPolicy],
     durable_name: functionName,
+    filter_subject: startupConfig.streamSubject ? startupConfig.streamSubject : startupConfig.consumerStreamName,
   };
   await jsm.consumers.add(consumerStreamName, consumerCfg);
   logger.log('Connected Consumer to Consumer Stream');
 }
 
-async function createStream(jsm: JetStreamManager, streamName: string): Promise<void> {
+async function createStream(jsm: JetStreamManager, streamName: string, subjectName?: string): Promise<void> {
   await jsm.streams.find(streamName).then(
-    (s) => {
-      logger.log('Producer stream already exists');
+    async (stream) => {
+      logger.log(`Stream: ${streamName} already exists.`);
+
+      if (subjectName) {
+        logger.log(`Adding subject: ${subjectName} to stream: ${streamName}`);
+        const streamInfo = await jsm.streams.info(stream);
+        streamInfo.config.subjects?.push(subjectName);
+        await jsm.streams.update(streamName, streamInfo.config);
+      }
     },
     async (reason) => {
       const typedRetentionPolicy = startupConfig.producerRetentionPolicy as keyof typeof RetentionPolicy;
@@ -164,12 +172,12 @@ async function createStream(jsm: JetStreamManager, streamName: string): Promise<
 
       const cfg: Partial<StreamConfig> = {
         name: streamName,
-        subjects: [streamName],
+        subjects: [subjectName ?? streamName],
         retention: RetentionPolicy[typedRetentionPolicy],
         storage: StorageType[typedStorgage],
       };
       await jsm.streams.add(cfg);
-      logger.log('Created the producer stream');
+      logger.log(`Created stream: ${streamName}`);
     },
   );
 }
@@ -182,9 +190,9 @@ async function createStream(jsm: JetStreamManager, streamName: string): Promise<
  *
  * @return {*}  {Promise<void>}
  */
-export async function handleResponse(response: string): Promise<void> {
+export async function handleResponse(response: string, subject?: string): Promise<void> {
   const sc = StringCodec();
-  if (producerStreamName) await js.publish(producerStreamName, sc.encode(response));
+  if (producerStreamName) await js.publish(subject ?? producerStreamName, sc.encode(response));
 }
 
 async function consume(js: JetStreamClient, onMessage: onMessageFunction, consumerStreamName: string, functionName: string): Promise<void> {
