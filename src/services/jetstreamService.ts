@@ -69,6 +69,7 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
 
     // Jetstream setup
     const jsm = await natsConn.jetstreamManager();
+    js = natsConn.jetstream();
 
     // Add consumer streams
     consumerStreamName = startupConfig.consumerStreamName; // "RuleRequest";
@@ -79,7 +80,6 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
     await createStream(jsm, producerStreamName);
 
     logger.log(`created the stream with functionName ${functionName}`);
-    js = natsConn.jetstream();
 
     if (consumerStreamName) await consume(js, onMessage, consumerStreamName, functionName);
     logger.log('Consumer subscription closed');
@@ -100,7 +100,13 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
  *
  * @return {*}  {Promise<void>}
  */
-export async function sendMessage(data: unknown): Promise<void> {
+export async function sendMessage(data: unknown, loggerService?: ILoggerService): Promise<void> {
+  if (loggerService) {
+    logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
+  } else {
+    logger = console;
+  }
+
   // Establish Connection to Nats Server
   const natsConn = await connect(server);
   logger.log(`connected to ${natsConn.getServer()}`);
