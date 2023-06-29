@@ -194,9 +194,14 @@ async function createStream(jsm: JetStreamManager, streamName: string, subjectNa
  */
 export async function handleResponse(response: string, subject: string[]): Promise<void> {
   const sc = StringCodec();
-  for (const sub of subject) {
-    if (producerStreamName) await js.publish(sub, sc.encode(response));
-  }
+  const publishes = [];
+
+  if (producerStreamName)
+    for (const sub of subject) {
+      publishes.push(js.publish(sub, sc.encode(response)));
+    }
+
+  await Promise.all(publishes);
 }
 
 async function consume(js: JetStreamClient, onMessage: onMessageFunction, consumerStreamName: string, functionName: string): Promise<void> {
