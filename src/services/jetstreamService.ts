@@ -150,7 +150,7 @@ async function createConsumer(functionName: string, jsm: JetStreamManager, consu
   const consumerCfg: Partial<ConsumerConfig> = {
     ack_policy: AckPolicy[typedAckPolicy],
     durable_name: functionName,
-    filter_subjects: streamSubjects,
+    // filter_subjects: streamSubjects, Require Nats Version 2.10 to be released. Slated for a few months.
   };
   await jsm.consumers.add(consumerStreamName, consumerCfg);
   logger.log('Connected Consumer to Consumer Stream');
