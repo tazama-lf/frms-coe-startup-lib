@@ -144,11 +144,13 @@ async function validateEnvironment(): Promise<void> {
 
 async function createConsumer(functionName: string, jsm: JetStreamManager, consumerStreamName: string): Promise<void> {
   await createStream(jsm, consumerStreamName, startupConfig.streamSubject ? startupConfig.streamSubject : undefined);
+  const streamSubjects = startupConfig.streamSubject ? startupConfig.streamSubject.split(',') : [startupConfig.consumerStreamName];
+
   const typedAckPolicy = startupConfig.ackPolicy;
   const consumerCfg: Partial<ConsumerConfig> = {
     ack_policy: AckPolicy[typedAckPolicy],
     durable_name: functionName,
-    filter_subject: startupConfig.streamSubject ? startupConfig.streamSubject : startupConfig.consumerStreamName,
+    filter_subjects: streamSubjects,
   };
   await jsm.consumers.add(consumerStreamName, consumerCfg);
   logger.log('Connected Consumer to Consumer Stream');
@@ -190,9 +192,11 @@ async function createStream(jsm: JetStreamManager, streamName: string, subjectNa
  *
  * @return {*}  {Promise<void>}
  */
-export async function handleResponse(response: string, subject?: string): Promise<void> {
+export async function handleResponse(response: string, subject: string[]): Promise<void> {
   const sc = StringCodec();
-  if (producerStreamName) await js.publish(subject ?? producerStreamName, sc.encode(response));
+  for (const sub of subject) {
+    if (producerStreamName) await js.publish(sub, sc.encode(response));
+  }
 }
 
 async function consume(js: JetStreamClient, onMessage: onMessageFunction, consumerStreamName: string, functionName: string): Promise<void> {
