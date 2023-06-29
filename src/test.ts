@@ -15,5 +15,5 @@ async function handleTransaction(reqObj: string, handleResponse: responseCallbac
   const resp = JSON.stringify(req);
 
   // Done, so call response method
-  handleResponse(resp);
+  handleResponse(resp, []);
 }

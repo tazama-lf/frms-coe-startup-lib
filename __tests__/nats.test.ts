@@ -24,7 +24,7 @@ describe('init', () => {
       const resp = JSON.stringify(req);
 
       // Done, so call response method
-      handleResponse(resp);
+      handleResponse(resp, []);
     }
 
     const runServer = async (): Promise<void> => {

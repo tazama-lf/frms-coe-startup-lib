@@ -59,6 +59,14 @@ export interface IStartupConfig {
   functionName: string;
 
   /**
+   *functionName: <string>process.env.STREAM_SUBJECT
+   *
+   * @type {string}
+   * @memberof IStartupConfig
+   */
+  streamSubject: string;
+
+  /**
    *delay: parseInt(process.env.DELAY!, 10) || 100
    *
    * @type {number}
@@ -75,6 +83,7 @@ export const startupConfig: IStartupConfig = {
   delay: parseInt(process.env.DELAY!, 10) || 100,
   producerStreamName: process.env.PRODUCER_STREAM as string,
   consumerStreamName: process.env.CONSUMER_STREAM as string,
+  streamSubject: process.env.STREAM_SUBJECT as string,
   producerRetentionPolicy: process.env.FUNCTION_NAME as string,
   ackPolicy: (process.env.ACK_POLICY as 'None' | 'All' | 'Explicit' | 'NotSet') || 'None',
   producerStorage: (process.env.PRODUCER_STORAGE as string) || '',
