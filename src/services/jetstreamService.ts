@@ -165,8 +165,8 @@ async function createStream(jsm: JetStreamManager, streamName: string, subjectNa
         logger.log(`Adding subject: ${subjectName} to stream: ${streamName}`);
         const streamInfo = await jsm.streams.info(stream);
 
-        if (streamInfo.config.subjects.includes(subjectName)){
-          logger.log("Subject Already present");
+        if (streamInfo.config.subjects.includes(subjectName)) {
+          logger.log('Subject Already present');
           return;
         }
 
