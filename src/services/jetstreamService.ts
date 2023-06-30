@@ -29,6 +29,9 @@ async function closeConnection(nc: NatsConnection, done: Promise<unknown | Error
 
 let producerStreamName: string;
 let consumerStreamName: string;
+let functionName: string;
+let NatsConn: NatsConnection;
+let jsm: JetStreamManager;
 let js: JetStreamClient;
 let logger: ILoggerService | Console;
 
@@ -49,42 +52,25 @@ let logger: ILoggerService | Console;
  */
 
 export async function init(onMessage: onMessageFunction, loggerService?: ILoggerService): Promise<boolean> {
-  if (loggerService) {
-    logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
-  } else {
-    logger = console;
-  }
-
   try {
     // Validate Environmental Variables.
     await validateEnvironment();
-
-    // Connect to NATS Server
-    const natsConn = await connect(server);
-    logger.log(`Connected to ${natsConn.getServer()}`);
+    await initProducer(loggerService);
 
     // this promise indicates the client closed
-    const done = natsConn.closed();
-    const functionName = startupConfig.functionName.replace(/\./g, '_');
-
-    // Jetstream setup
-    const jsm = await natsConn.jetstreamManager();
-    js = natsConn.jetstream();
+    const done = NatsConn.closed();
 
     // Add consumer streams
     consumerStreamName = startupConfig.consumerStreamName; // "RuleRequest";
     await createConsumer(functionName, jsm, consumerStreamName);
 
-    // Add producer streams
-    producerStreamName = startupConfig.producerStreamName; // `RuleResponse${functionName}`;
-    await createStream(jsm, producerStreamName);
-
     logger.log(`created the stream with functionName ${functionName}`);
 
     if (consumerStreamName) await consume(js, onMessage, consumerStreamName, functionName);
     logger.log('Consumer subscription closed');
+
     // close the connection
-    await closeConnection(natsConn, done);
+    await closeConnection(NatsConn, done);
   } catch (err) {
     logger.log(`Error communicating with NATS on: ${JSON.stringify(server)}, with error: ${JSON.stringify(err)}`);
     throw err;
@@ -93,39 +79,46 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
 }
 
 /**
- * Initialise a Jetstream connection, and plublish message to the environmental producer stream.
+ * Initialize JetStream Producer Stream
  *
  * @export
- * @param {unknown} data Data to be send to Publish stream. String or JSON prefered.
+ * @param {Function} loggerService
  *
- * @return {*}  {Promise<void>}
+ * Method to init Producer Stream. This function will not react to incomming NATS messages.
+ * The Following environmental variables is required for this function to work:
+ * NODE_ENV=debug
+ * SERVER_URL=0.0.0.0:4222 - Nats Server URL
+ * FUNCTION_NAME=function_name - Function Name is used to determine streams.
+ * PRODUCER_STREAM - Stream name for the producer Stream
+ *
+ * @return {*}  {Promise<boolean>}
  */
-export async function sendMessage(data: unknown, loggerService?: ILoggerService): Promise<void> {
+
+export async function initProducer(loggerService?: ILoggerService): Promise<boolean> {
   if (loggerService) {
     logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
   } else {
     logger = console;
   }
 
-  // Establish Connection to Nats Server
-  const natsConn = await connect(server);
-  logger.log(`connected to ${natsConn.getServer()}`);
+  try {
+    // Connect to NATS Server
+    NatsConn = await connect(server);
+    logger.log(`Connected to ${NatsConn.getServer()}`);
+    functionName = startupConfig.functionName.replace(/\./g, '_');
 
-  // Jetstream setup
-  const jsm = await natsConn.jetstreamManager();
+    // Jetstream setup
+    jsm = await NatsConn.jetstreamManager();
+    js = NatsConn.jetstream();
 
-  const functionName = startupConfig.functionName.replace(/\./g, '_');
-  producerStreamName = startupConfig.producerStreamName;
-  await createStream(jsm, producerStreamName);
-
-  logger.log(`created the stream with functionName ${functionName}`);
-  const js = natsConn.jetstream();
-
-  const sc = StringCodec();
-  if (producerStreamName) await js.publish(producerStreamName, sc.encode(JSON.stringify(data)));
-
-  const done = natsConn.closed();
-  await closeConnection(natsConn, done);
+    // Add producer streams
+    producerStreamName = startupConfig.producerStreamName; // `RuleResponse${functionName}`;
+    await createStream(jsm, producerStreamName);
+  } catch (error) {
+    logger.log(`Error communicating with NATS on: ${JSON.stringify(server)}, with error: ${JSON.stringify(error)}`);
+    throw error;
+  }
+  return true;
 }
 
 async function validateEnvironment(): Promise<void> {
@@ -164,6 +157,12 @@ async function createStream(jsm: JetStreamManager, streamName: string, subjectNa
       if (subjectName) {
         logger.log(`Adding subject: ${subjectName} to stream: ${streamName}`);
         const streamInfo = await jsm.streams.info(stream);
+
+        if (streamInfo.config.subjects.includes(subjectName)) {
+          logger.log('Subject Already present');
+          return;
+        }
+
         if (streamInfo.config.subjects) streamInfo.config.subjects.push(subjectName);
         else streamInfo.config.subjects = [subjectName];
         await jsm.streams.update(streamName, streamInfo.config);
