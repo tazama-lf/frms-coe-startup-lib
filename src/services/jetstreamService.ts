@@ -78,6 +78,22 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
   return true;
 }
 
+/**
+ * Initialize JetStream Producer Stream
+ *
+ * @export
+ * @param {Function} loggerService 
+ *
+ * Method to init Producer Stream. This function will not react to incomming NATS messages.
+ * The Following environmental variables is required for this function to work:
+ * NODE_ENV=debug
+ * SERVER_URL=0.0.0.0:4222 - Nats Server URL
+ * FUNCTION_NAME=function_name - Function Name is used to determine streams.
+ * PRODUCER_STREAM - Stream name for the producer Stream
+ *
+ * @return {*}  {Promise<boolean>}
+ */
+
 export async function initProducer(loggerService?: ILoggerService): Promise<boolean> {
   if (loggerService) {
     logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
