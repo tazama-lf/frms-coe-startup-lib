@@ -29,6 +29,9 @@ async function closeConnection(nc: NatsConnection, done: Promise<unknown | Error
 
 let producerStreamName: string;
 let consumerStreamName: string;
+let functionName: string;
+let NatsConn: NatsConnection;
+let jsm: JetStreamManager;
 let js: JetStreamClient;
 let logger: ILoggerService | Console;
 
@@ -49,6 +52,33 @@ let logger: ILoggerService | Console;
  */
 
 export async function init(onMessage: onMessageFunction, loggerService?: ILoggerService): Promise<boolean> {
+  try {
+    // Validate Environmental Variables.
+    await validateEnvironment();
+    await initProducer(loggerService);
+
+    // this promise indicates the client closed
+    const done = NatsConn.closed();
+
+    // Add consumer streams
+    consumerStreamName = startupConfig.consumerStreamName; // "RuleRequest";
+    await createConsumer(functionName, jsm, consumerStreamName);
+
+    logger.log(`created the stream with functionName ${functionName}`);
+
+    if (consumerStreamName) await consume(js, onMessage, consumerStreamName, functionName);
+    logger.log('Consumer subscription closed');
+
+    // close the connection
+    await closeConnection(NatsConn, done);
+  } catch (err) {
+    logger.log(`Error communicating with NATS on: ${JSON.stringify(server)}, with error: ${JSON.stringify(err)}`);
+    throw err;
+  }
+  return true;
+}
+
+export async function initProducer(loggerService?: ILoggerService): Promise<boolean> {
   if (loggerService) {
     logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
   } else {
@@ -56,38 +86,21 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
   }
 
   try {
-    // Validate Environmental Variables.
-    await validateEnvironment();
-
     // Connect to NATS Server
-    const natsConn = await connect(server);
-    logger.log(`Connected to ${natsConn.getServer()}`);
-
-    // this promise indicates the client closed
-    const done = natsConn.closed();
-    const functionName = startupConfig.functionName.replace(/\./g, '_');
+    NatsConn = await connect(server);
+    logger.log(`Connected to ${NatsConn.getServer()}`);
+    functionName = startupConfig.functionName.replace(/\./g, '_');
 
     // Jetstream setup
-    const jsm = await natsConn.jetstreamManager();
-    js = natsConn.jetstream();
-
-    // Add consumer streams
-    consumerStreamName = startupConfig.consumerStreamName; // "RuleRequest";
-    await createConsumer(functionName, jsm, consumerStreamName);
+    jsm = await NatsConn.jetstreamManager();
+    js = NatsConn.jetstream();
 
     // Add producer streams
     producerStreamName = startupConfig.producerStreamName; // `RuleResponse${functionName}`;
     await createStream(jsm, producerStreamName);
-
-    logger.log(`created the stream with functionName ${functionName}`);
-
-    if (consumerStreamName) await consume(js, onMessage, consumerStreamName, functionName);
-    logger.log('Consumer subscription closed');
-    // close the connection
-    await closeConnection(natsConn, done);
-  } catch (err) {
-    logger.log(`Error communicating with NATS on: ${JSON.stringify(server)}, with error: ${JSON.stringify(err)}`);
-    throw err;
+  } catch (error) {
+    logger.log(`Error communicating with NATS on: ${JSON.stringify(server)}, with error: ${JSON.stringify(error)}`);
+    throw error;
   }
   return true;
 }
