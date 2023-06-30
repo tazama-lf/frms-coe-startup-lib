@@ -105,42 +105,6 @@ export async function initProducer(loggerService?: ILoggerService): Promise<bool
   return true;
 }
 
-/**
- * Initialise a Jetstream connection, and plublish message to the environmental producer stream.
- *
- * @export
- * @param {unknown} data Data to be send to Publish stream. String or JSON prefered.
- *
- * @return {*}  {Promise<void>}
- */
-export async function sendMessage(data: unknown, loggerService?: ILoggerService): Promise<void> {
-  if (loggerService) {
-    logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
-  } else {
-    logger = console;
-  }
-
-  // Establish Connection to Nats Server
-  const natsConn = await connect(server);
-  logger.log(`connected to ${natsConn.getServer()}`);
-
-  // Jetstream setup
-  const jsm = await natsConn.jetstreamManager();
-
-  const functionName = startupConfig.functionName.replace(/\./g, '_');
-  producerStreamName = startupConfig.producerStreamName;
-  await createStream(jsm, producerStreamName);
-
-  logger.log(`created the stream with functionName ${functionName}`);
-  const js = natsConn.jetstream();
-
-  const sc = StringCodec();
-  if (producerStreamName) await js.publish(producerStreamName, sc.encode(JSON.stringify(data)));
-
-  const done = natsConn.closed();
-  await closeConnection(natsConn, done);
-}
-
 async function validateEnvironment(): Promise<void> {
   if (!startupConfig.consumerStreamName) {
     throw new Error(`No Consumer Stream Name Provided in environmental Variable`);
