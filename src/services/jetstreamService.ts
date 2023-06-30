@@ -82,7 +82,7 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
  * Initialize JetStream Producer Stream
  *
  * @export
- * @param {Function} loggerService 
+ * @param {Function} loggerService
  *
  * Method to init Producer Stream. This function will not react to incomming NATS messages.
  * The Following environmental variables is required for this function to work:
