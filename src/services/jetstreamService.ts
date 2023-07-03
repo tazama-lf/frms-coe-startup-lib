@@ -53,8 +53,11 @@ let logger: ILoggerService | Console;
 
 export async function init(onMessage: onMessageFunction, loggerService?: ILoggerService): Promise<boolean> {
   try {
-    // Validate Environmental Variables.
-    await validateEnvironment();
+    // Validate additional Environmental Variables.
+    if (!startupConfig.consumerStreamName) {
+      throw new Error(`No Consumer Stream Name Provided in environmental Variable`);
+    }
+
     await initProducer(loggerService);
 
     // this promise indicates the client closed
@@ -95,6 +98,7 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
  */
 
 export async function initProducer(loggerService?: ILoggerService): Promise<boolean> {
+  await validateEnvironment();
   if (loggerService) {
     logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
   } else {
@@ -122,16 +126,16 @@ export async function initProducer(loggerService?: ILoggerService): Promise<bool
 }
 
 async function validateEnvironment(): Promise<void> {
-  if (!startupConfig.consumerStreamName) {
-    throw new Error(`No Consumer Stream Name Provided in environmental Variable`);
-  }
-
   if (!startupConfig.producerStreamName) {
     throw new Error(`No Producer Stream Name Provided in environmental Variable`);
   }
 
   if (!startupConfig.serverUrl) {
     throw new Error(`No Server URL was Provided in environmental Variable`);
+  }
+
+  if (!startupConfig.functionName){
+    throw new Error(`No Function Name was Provided in environmental Variable`)
   }
 }
 
