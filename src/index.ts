@@ -1,4 +1,4 @@
-import { init, handleResponse } from './services/jetstreamService';
+import { init, handleResponse, initProducer } from './services/jetstreamService';
 import { type IStartupConfig } from './interfaces';
 
-export { init, handleResponse, type IStartupConfig };
+export { init, initProducer, handleResponse, type IStartupConfig };
