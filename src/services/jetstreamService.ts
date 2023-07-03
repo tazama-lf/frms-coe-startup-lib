@@ -192,16 +192,20 @@ async function createStream(jsm: JetStreamManager, streamName: string, subjectNa
  *
  * @return {*}  {Promise<void>}
  */
-export async function handleResponse(response: string, subject: string[]): Promise<void> {
+export async function handleResponse(response: string, subject?: string[]): Promise<void> {
   const sc = StringCodec();
   const publishes = [];
 
   if (producerStreamName)
-    for (const sub of subject) {
-      publishes.push(js.publish(sub, sc.encode(response)));
-    }
+    if (!subject) {
+      publishes.push(js.publish(producerStreamName, sc.encode(response)));
+    } else {
+      for (const sub of subject) {
+        publishes.push(js.publish(sub, sc.encode(response)));
+      }
 
-  await Promise.all(publishes);
+      await Promise.all(publishes);
+    }
 }
 
 async function consume(js: JetStreamClient, onMessage: onMessageFunction, consumerStreamName: string, functionName: string): Promise<void> {
