@@ -134,8 +134,8 @@ async function validateEnvironment(): Promise<void> {
     throw new Error(`No Server URL was Provided in environmental Variable`);
   }
 
-  if (!startupConfig.functionName){
-    throw new Error(`No Function Name was Provided in environmental Variable`)
+  if (!startupConfig.functionName) {
+    throw new Error(`No Function Name was Provided in environmental Variable`);
   }
 }
 
