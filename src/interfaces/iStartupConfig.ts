@@ -1,6 +1,5 @@
-import path from 'path';
 import { config as dotenv } from 'dotenv';
-import { RetentionPolicy } from 'nats';
+import path from 'path';
 
 // Load .env file into process.env if it exists. This is convenient for running locally.
 dotenv({

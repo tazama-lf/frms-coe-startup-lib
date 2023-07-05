@@ -10,9 +10,9 @@ import {
   type NatsConnection,
   type StreamConfig,
 } from 'nats';
+import { type ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { type onMessageFunction } from '../types/onMessageFunction';
-import { type ILoggerService } from '../interfaces';
 
 const server = {
   servers: startupConfig.serverUrl,
@@ -66,8 +66,6 @@ export async function init(onMessage: onMessageFunction, loggerService?: ILogger
     // Add consumer streams
     consumerStreamName = startupConfig.consumerStreamName; // "RuleRequest";
     await createConsumer(functionName, jsm, consumerStreamName);
-
-    logger.log(`created the stream with functionName ${functionName}`);
 
     if (consumerStreamName) await consume(js, onMessage, consumerStreamName, functionName);
     logger.log('Consumer subscription closed');
@@ -140,17 +138,22 @@ async function validateEnvironment(): Promise<void> {
 }
 
 async function createConsumer(functionName: string, jsm: JetStreamManager, consumerStreamName: string): Promise<void> {
-  await createStream(jsm, consumerStreamName, startupConfig.streamSubject ? startupConfig.streamSubject : undefined);
-  const streamSubjects = startupConfig.streamSubject ? startupConfig.streamSubject.split(',') : [startupConfig.consumerStreamName];
+  const consumerStreams = consumerStreamName.split(',');
 
-  const typedAckPolicy = startupConfig.ackPolicy;
-  const consumerCfg: Partial<ConsumerConfig> = {
-    ack_policy: AckPolicy[typedAckPolicy],
-    durable_name: functionName,
-    // filter_subjects: streamSubjects, Require Nats Version 2.10 to be released. Slated for a few months.
-  };
-  await jsm.consumers.add(consumerStreamName, consumerCfg);
-  logger.log('Connected Consumer to Consumer Stream');
+  for (const stream of consumerStreams) {
+    await createStream(jsm, stream, startupConfig.streamSubject ? startupConfig.streamSubject : undefined);
+    // Require Nats Version 2.10 to be released. Slated for a few months.
+    // const streamSubjects = startupConfig.streamSubject ? startupConfig.streamSubject.split(',') : [startupConfig.consumerStreamName];
+
+    const typedAckPolicy = startupConfig.ackPolicy;
+    const consumerCfg: Partial<ConsumerConfig> = {
+      ack_policy: AckPolicy[typedAckPolicy],
+      durable_name: functionName,
+      // filter_subjects: streamSubjects, Require Nats Version 2.10 to be released. Slated for a few months.
+    };
+    await jsm.consumers.add(stream, consumerCfg);
+    logger.log('Connected Consumer to Consumer Stream');
+  }
 }
 
 async function createStream(jsm: JetStreamManager, streamName: string, subjectName?: string): Promise<void> {
@@ -196,16 +199,17 @@ async function createStream(jsm: JetStreamManager, streamName: string, subjectNa
  *
  * @return {*}  {Promise<void>}
  */
-export async function handleResponse(response: string, subject?: string[]): Promise<void> {
+export async function handleResponse(response: unknown, subject?: string[]): Promise<void> {
   const sc = StringCodec();
   const publishes = [];
+  const res = JSON.stringify(response);
 
   if (producerStreamName)
     if (!subject) {
-      publishes.push(js.publish(producerStreamName, sc.encode(response)));
+      publishes.push(js.publish(producerStreamName, sc.encode(res)));
     } else {
       for (const sub of subject) {
-        publishes.push(js.publish(sub, sc.encode(response)));
+        publishes.push(js.publish(sub, sc.encode(res)));
       }
 
       await Promise.all(publishes);

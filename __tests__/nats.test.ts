@@ -17,9 +17,9 @@ describe('init', () => {
   });
 
   it('handleTransaction Should have been called', async () => {
-    async function handleTransaction(reqObj: string, handleResponse: responseCallback): Promise<void> {
+    async function handleTransaction(reqObj: unknown, handleResponse: responseCallback): Promise<void> {
       // Do stuff
-      const req = JSON.parse(reqObj);
+      const req = JSON.parse(reqObj as string);
       req.Test = { some: 'val', another: 'one' };
       const resp = JSON.stringify(req);
 
