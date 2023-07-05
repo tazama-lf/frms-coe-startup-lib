@@ -1,6 +1,6 @@
 {
   "name": "@frmscoe/frms-coe-startup-lib",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "FRMS Center of Excellence startup package library",
   "main": "lib/index.js",
   "repository": {
