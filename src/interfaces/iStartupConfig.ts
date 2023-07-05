@@ -7,6 +7,13 @@ dotenv({
 });
 
 export interface IStartupConfig {
+  /**
+   *Configure the service type that should be started up, eg, Nats = 'nats' or Jetstream = 'jetstream'
+   *
+   * @type {('nats' | 'jetstream')}
+   * @memberof IStartupConfig
+   */
+  serverType: 'nats' | 'jetstream';
   ackPolicy: 'None' | 'All' | 'Explicit' | 'NotSet';
   /**
    *Could be either "Memory" or "File"
@@ -34,13 +41,6 @@ export interface IStartupConfig {
   serverUrl: string;
 
   /**
-   *iterations: parseInt(process.env.ITERATIONS!, 10) || 1000
-   *
-   * @type {number}
-   * @memberof IStartupConfig
-   */
-  iterations: number;
-  /**
    *env: <string>process.env.NODE_ENV
    *
    * @type {string}
@@ -64,26 +64,17 @@ export interface IStartupConfig {
    * @memberof IStartupConfig
    */
   streamSubject: string;
-
-  /**
-   *delay: parseInt(process.env.DELAY!, 10) || 100
-   *
-   * @type {number}
-   * @memberof IStartupConfig
-   */
-  delay: number;
 }
 
 export const startupConfig: IStartupConfig = {
-  iterations: parseInt(process.env.ITERATIONS!, 10) || 1000,
+  serverType: process.env.NODE_ENV as 'nats' | 'jetstream',
   env: process.env.NODE_ENV as string,
   serverUrl: process.env.SERVER_URL as string,
   functionName: process.env.FUNCTION_NAME as string,
-  delay: parseInt(process.env.DELAY!, 10) || 100,
   producerStreamName: process.env.PRODUCER_STREAM as string,
   consumerStreamName: process.env.CONSUMER_STREAM as string,
   streamSubject: process.env.STREAM_SUBJECT as string,
-  producerRetentionPolicy: process.env.FUNCTION_NAME as string,
+  producerRetentionPolicy: (process.env.PRODUCER_RETENTION_POLICY as 'Limits' | 'Interest' | 'Workqueue') || 'Workqueue',
   ackPolicy: (process.env.ACK_POLICY as 'None' | 'All' | 'Explicit' | 'NotSet') || 'None',
   producerStorage: (process.env.PRODUCER_STORAGE as string) || '',
 };
