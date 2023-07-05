@@ -140,11 +140,11 @@ async function validateEnvironment(): Promise<void> {
 async function createConsumer(functionName: string, jsm: JetStreamManager, consumerStreamName: string): Promise<void> {
   const consumerStreams = consumerStreamName.split(',');
 
-  for (let stream of consumerStreams){
+  for (const stream of consumerStreams) {
     await createStream(jsm, stream, startupConfig.streamSubject ? startupConfig.streamSubject : undefined);
-    //Require Nats Version 2.10 to be released. Slated for a few months.
-    //const streamSubjects = startupConfig.streamSubject ? startupConfig.streamSubject.split(',') : [startupConfig.consumerStreamName]; 
-  
+    // Require Nats Version 2.10 to be released. Slated for a few months.
+    // const streamSubjects = startupConfig.streamSubject ? startupConfig.streamSubject.split(',') : [startupConfig.consumerStreamName];
+
     const typedAckPolicy = startupConfig.ackPolicy;
     const consumerCfg: Partial<ConsumerConfig> = {
       ack_policy: AckPolicy[typedAckPolicy],
@@ -202,7 +202,7 @@ async function createStream(jsm: JetStreamManager, streamName: string, subjectNa
 export async function handleResponse(response: unknown, subject?: string[]): Promise<void> {
   const sc = StringCodec();
   const publishes = [];
-  const res = JSON.stringify(response)
+  const res = JSON.stringify(response);
 
   if (producerStreamName)
     if (!subject) {
