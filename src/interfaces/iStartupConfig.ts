@@ -13,7 +13,7 @@ export interface IStartupConfig {
    * @type {('nats' | 'jetstream')}
    * @memberof IStartupConfig
    */
-  serverType: 'nats' | 'jetstream';
+  startupType: 'nats' | 'jetstream';
   ackPolicy: 'None' | 'All' | 'Explicit' | 'NotSet';
   /**
    *Could be either "Memory" or "File"
@@ -67,7 +67,7 @@ export interface IStartupConfig {
 }
 
 export const startupConfig: IStartupConfig = {
-  serverType: process.env.NODE_ENV as 'nats' | 'jetstream',
+  startupType: process.env.STARTUP_TYPE as 'nats' | 'jetstream',
   env: process.env.NODE_ENV as string,
   serverUrl: process.env.SERVER_URL as string,
   functionName: process.env.FUNCTION_NAME as string,
@@ -75,6 +75,6 @@ export const startupConfig: IStartupConfig = {
   consumerStreamName: process.env.CONSUMER_STREAM as string,
   streamSubject: process.env.STREAM_SUBJECT as string,
   producerRetentionPolicy: (process.env.PRODUCER_RETENTION_POLICY as 'Limits' | 'Interest' | 'Workqueue') || 'Workqueue',
-  ackPolicy: (process.env.ACK_POLICY as 'None' | 'All' | 'Explicit' | 'NotSet') || 'None',
-  producerStorage: (process.env.PRODUCER_STORAGE as string) || '',
+  ackPolicy: (process.env.ACK_POLICY as 'All' | 'Explicit') || 'Explicit',
+  producerStorage: (process.env.PRODUCER_STORAGE as 'File' | 'Memory') || 'Memory',
 };

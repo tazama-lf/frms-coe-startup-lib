@@ -61,7 +61,7 @@ export class JetstreamService implements IStartupService {
       if (!startupConfig.consumerStreamName) {
         throw new Error(`No Consumer Stream Name Provided in environmental Variable`);
       }
-      this.initProducer(loggerService);
+      await this.initProducer(loggerService);
       // Guard statement to ensure initProducer was successful
       if (!this.NatsConn || !this.jsm || !this.js || !this.logger) return await Promise.resolve(false);
       // this promise indicates the client closed
@@ -233,8 +233,11 @@ export class JetstreamService implements IStartupService {
     for await (const message of sub) {
       console.debug(`${Date.now().toLocaleString()} S:[${message?.seq}] Q:[${message.subject}]: ${message.data.length}`);
       const request = message.json<string>();
-
-      await onMessage(request, this.handleResponse);
+      try {
+        await onMessage(request, this.handleResponse);
+      } catch (error) {
+        this.logger?.error(`Error while handling message: \r\n${error as string}`);
+      }
       message.ack();
     }
   }

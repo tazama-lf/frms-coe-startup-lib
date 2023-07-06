@@ -1,6 +1,6 @@
 // redis and aragojs is mocked
 // setup.jest.js.
-import { StartupFactory } from '../src'
+import { StartupFactory } from '../src';
 import { type responseCallback } from '../src/types/onMessageFunction';
 import { startupConfig } from '../src/interfaces/iStartupConfig';
 
@@ -27,7 +27,7 @@ describe('init', () => {
       handleResponse(resp, []);
     }
 
-    startupConfig.serverType = 'jetstream';
+    startupConfig.startupType = 'jetstream';
     const runServer = async (): Promise<void> => {
       for (let retryCount = 0; retryCount < 10; retryCount++) {
         let jsService = new StartupFactory();
@@ -50,7 +50,7 @@ describe('init', () => {
       handleResponse(resp, []);
     }
 
-    startupConfig.serverType = 'nats';
+    startupConfig.startupType = 'nats';
     const runServer = async (): Promise<void> => {
       for (let retryCount = 0; retryCount < 10; retryCount++) {
         let jsService = new StartupFactory();
