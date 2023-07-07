@@ -68,7 +68,7 @@ export class NatsService implements IStartupService {
         }
       })();
 
-      //this.logger.log('Consumer subscription closed');
+      // this.logger.log('Consumer subscription closed');
 
       // close the connection
       // await this.closeConnection(this.NatsConn, done);
