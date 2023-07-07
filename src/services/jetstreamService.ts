@@ -168,16 +168,19 @@ export class JetstreamService implements IStartupService {
         this.logger?.log(`Stream: ${streamName} already exists.`);
 
         if (subjectName) {
-          this.logger?.log(`Adding subject: ${subjectName} to stream: ${streamName}`);
+          const subjectList = subjectName.split(',');
+          this.logger?.log(`Adding subject(s): ${subjectName} to stream: ${streamName}`);
           const streamInfo = await jsm.streams.info(stream);
 
-          if (streamInfo.config.subjects.includes(subjectName)) {
-            this.logger?.log('Subject Already present');
-            return;
-          }
+          for (const subject of subjectList) {
+            if (streamInfo.config.subjects.includes(subject)) {
+              this.logger?.log('Subject Already present');
+              return;
+            }
 
-          if (streamInfo.config.subjects) streamInfo.config.subjects.push(subjectName);
-          else streamInfo.config.subjects = [subjectName];
+            if (streamInfo.config.subjects) streamInfo.config.subjects.push(subject);
+            else streamInfo.config.subjects = [subject];
+          }
           await jsm.streams.update(streamName, streamInfo.config);
         }
       },
@@ -187,7 +190,7 @@ export class JetstreamService implements IStartupService {
 
         const cfg: Partial<StreamConfig> = {
           name: streamName,
-          subjects: [subjectName ?? streamName],
+          subjects: subjectName ? subjectName.split(',') : [streamName],
           retention: RetentionPolicy[typedRetentionPolicy],
           storage: StorageType[typedStorgage],
         };
