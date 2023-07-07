@@ -68,10 +68,10 @@ export class NatsService implements IStartupService {
         }
       })();
 
-      this.logger.log('Consumer subscription closed');
+      //this.logger.log('Consumer subscription closed');
 
       // close the connection
-      await this.closeConnection(this.NatsConn, done);
+      // await this.closeConnection(this.NatsConn, done);
     } catch (err) {
       this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(err)}`);
       throw err;
