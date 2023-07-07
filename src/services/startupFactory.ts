@@ -26,6 +26,10 @@ export class StartupFactory implements IStartupService {
     return await this.startupService.init(onMessage, loggerService);
   }
 
+  async initProducer(loggerService?: ILoggerService | undefined): Promise<boolean> {
+    return await this.startupService.initProducer(loggerService);
+  }
+
   async handleResponse(response: unknown, subject?: string[] | undefined): Promise<void> {
     await this.startupService.handleResponse(response, subject);
   }
