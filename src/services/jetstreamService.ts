@@ -174,12 +174,13 @@ export class JetstreamService implements IStartupService {
 
           for (const subject of subjectList) {
             if (streamInfo.config.subjects.includes(subject)) {
-              this.logger?.log('Subject Already present');
-              return;
+              this.logger?.log(`Subject: ${subject} Already present`);
+              continue;
             }
 
             if (streamInfo.config.subjects) streamInfo.config.subjects.push(subject);
             else streamInfo.config.subjects = [subject];
+            this.logger?.log(`Subject: ${subject} Added.`);
           }
           await jsm.streams.update(streamName, streamInfo.config);
         }
