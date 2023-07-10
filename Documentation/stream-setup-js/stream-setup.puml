@@ -1,0 +1,30 @@
+@startuml FRM Jetstream Setup
+title FRM Jetstream Setup
+autonumber
+
+actor "Request" as R
+participant "TMS" as TMS
+participant "Data Prep" as DP
+participant "CRSP" as CRSP
+participant "Rule Executor" as RE
+participant "Typology Processor" as TP
+participant "CADP" as CADP
+participant "TADP" as TADP
+
+R -> TMS: HTTP POST/execute
+R -> TMS: HTTP POST/quoteReply
+R -> TMS: HTTP POST/transfer
+R -> TMS: HTTP POST/transfer-response
+note over TMS: ConsumerStream: N/A\nProducerStream: "DataPrep"\nSubject: N/A
+TMS -> DP: Publish/DataPrep
+note over DP: ConsumerStream: DataPrep\nProducerStream: "crsp"\nSubject: N/A
+DP -> CRSP: Publish/crsp
+note over CRSP: ConsumerStream: crsp\nProducerStream: "RuleRequests"\nSubject: N/A\nSubjects will be populated based on\nrule hosts in the networkmap
+CRSP -> RE: Publish/ruleRequests + Rule-XXX
+note over RE: ConsumerStream: "RuleRequests"\nProducerStream: "RuleResponseXXX"\nSubject: "RuleRequestXXX"\nSubject MUST match value in host.
+RE -> TP: Publish/RuleResultRule-XXX
+note over TP: ConsumerStream: "RuleResponseXXX,RuleResponseXXY"\nProducerStream: "cadp"\nSubject: N/A
+TP -> CADP: Publish/cadp
+note over CADP: ConsumerStream: "cadp"\nProducerStream: "tadp"\nSubject: N/A
+CADP -> TADP: Publish/tadp
+note over TADP: ConsumerStream: "tadp"\nProducerStream: N/A\nSubject: N/A
