@@ -62,7 +62,6 @@ export class JetstreamService implements IStartupService {
       await this.createConsumer(this.functionName, this.jsm, this.consumerStreamName);
 
       if (this.consumerStreamName) await this.consume(this.js, onMessage, this.consumerStreamName, this.functionName);
-
     } catch (err) {
       this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(err)}`);
       throw err;
@@ -118,7 +117,7 @@ export class JetstreamService implements IStartupService {
       while (!connected) {
         this.logger!.log(`Attempting to recconect to NATS...`);
         connected = await this.connectNats();
-        if (!(connected)) {
+        if (!connected) {
           this.logger!.warn(`Unable to connect, retrying....`);
           await new Promise((resolve) => setTimeout(resolve, 5000));
         } else {
@@ -153,7 +152,7 @@ export class JetstreamService implements IStartupService {
       this.jsm = await this.NatsConn.jetstreamManager();
       this.js = this.NatsConn.jetstream();
 
-      if (this.consumerStreamName && this.onMessage){
+      if (this.consumerStreamName && this.onMessage) {
         await this.createConsumer(this.functionName, this.jsm, this.consumerStreamName);
         await this.consume(this.js, this.onMessage, this.consumerStreamName, this.functionName);
       }

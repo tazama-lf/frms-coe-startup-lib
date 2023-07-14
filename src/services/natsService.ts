@@ -15,7 +15,6 @@ export class NatsService implements IStartupService {
   NatsConn?: NatsConnection;
   logger?: ILoggerService | Console;
 
-
   /**
    * Initialize Nats consumer, supplying a callback function to call every time a new message comes in.
    *
@@ -58,7 +57,6 @@ export class NatsService implements IStartupService {
           this.subscribe(sub, onMessage);
         }
       })();
-
     } catch (err) {
       this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(err)}`);
       throw err;
