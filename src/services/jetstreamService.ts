@@ -91,7 +91,7 @@ export class JetstreamService implements IStartupService {
     } else {
       this.logger = console;
     }
-    
+
     try {
       // Connect to NATS Server
       this.logger.log(`Attempting connection to NATS, with config:\n${JSON.stringify(startupConfig, null, 4)}`);
