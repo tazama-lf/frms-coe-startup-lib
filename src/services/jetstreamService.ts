@@ -27,17 +27,7 @@ export class JetstreamService implements IStartupService {
   jsm?: JetStreamManager;
   js?: JetStreamClient;
   logger?: ILoggerService | Console;
-
-  async closeConnection(nc: NatsConnection, done: Promise<unknown | Error>): Promise<void> {
-    await nc.close();
-    console.log('Connection closed');
-    // check if the close was OK
-    const err = await done;
-    if (err) {
-      console.log('Error closing connection:', err);
-    }
-    await Promise.resolve();
-  }
+  onMessage?: onMessageFunction;
 
   /**
    * Initialize JetStream consumer, supplying a callback function to call every time a new message comes in.
@@ -61,21 +51,18 @@ export class JetstreamService implements IStartupService {
       if (!startupConfig.consumerStreamName) {
         throw new Error(`No Consumer Stream Name Provided in environmental Variable`);
       }
+
+      this.onMessage = onMessage;
       await this.initProducer(loggerService);
       // Guard statement to ensure initProducer was successful
       if (!this.NatsConn || !this.jsm || !this.js || !this.logger) return await Promise.resolve(false);
-      // this promise indicates the client closed
-      const done = this.NatsConn.closed();
 
       // Add consumer streams
       this.consumerStreamName = startupConfig.consumerStreamName; // "RuleRequest";
       await this.createConsumer(this.functionName, this.jsm, this.consumerStreamName);
 
       if (this.consumerStreamName) await this.consume(this.js, onMessage, this.consumerStreamName, this.functionName);
-      this.logger.log('Consumer subscription closed');
 
-      // close the connection
-      await this.closeConnection(this.NatsConn, done);
     } catch (err) {
       this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(err)}`);
       throw err;
@@ -124,6 +111,23 @@ export class JetstreamService implements IStartupService {
       throw error;
     }
 
+    this.NatsConn.closed().then(async () => {
+      this.logger!.log('Connection Lost to NATS Server, Reconnecting...');
+      let connected = false;
+
+      while (!connected) {
+        this.logger!.log(`Attempting to recconect to NATS...`);
+        connected = await this.connectNats();
+        if (!(connected)) {
+          this.logger!.warn(`Unable to connect, retrying....`);
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        } else {
+          this.logger!.log(`Reconnected to nats`);
+          break;
+        }
+      }
+    });
+
     return await Promise.resolve(true);
   }
 
@@ -140,6 +144,24 @@ export class JetstreamService implements IStartupService {
       throw new Error(`No Function Name was Provided in environmental Variable`);
     }
     await Promise.resolve(undefined);
+  }
+
+  async connectNats(): Promise<boolean> {
+    try {
+      this.NatsConn = await connect(this.server);
+
+      this.jsm = await this.NatsConn.jetstreamManager();
+      this.js = this.NatsConn.jetstream();
+
+      if (this.consumerStreamName && this.onMessage){
+        await this.createConsumer(this.functionName, this.jsm, this.consumerStreamName);
+        await this.consume(this.js, this.onMessage, this.consumerStreamName, this.functionName);
+      }
+    } catch (error) {
+      this.logger?.log(`Failed to connect to NATS.\n${JSON.stringify(error, null, 4)}`);
+      return false;
+    }
+    return true;
   }
 
   async createConsumer(functionName: string, jsm: JetStreamManager, consumerStreamName: string): Promise<void> {

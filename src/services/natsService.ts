@@ -15,15 +15,6 @@ export class NatsService implements IStartupService {
   NatsConn?: NatsConnection;
   logger?: ILoggerService | Console;
 
-  async closeConnection(nc: NatsConnection, done: Promise<unknown | Error>): Promise<void> {
-    await nc.close();
-    console.log('Connection closed');
-    // check if the close was OK
-    const err = await done;
-    if (err) {
-      console.log('error closing:', err);
-    }
-  }
 
   /**
    * Initialize Nats consumer, supplying a callback function to call every time a new message comes in.
@@ -68,10 +59,6 @@ export class NatsService implements IStartupService {
         }
       })();
 
-      // this.logger.log('Consumer subscription closed');
-
-      // close the connection
-      // await this.closeConnection(this.NatsConn, done);
     } catch (err) {
       this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(err)}`);
       throw err;
@@ -123,6 +110,11 @@ export class NatsService implements IStartupService {
       this.logger.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(error)}`);
       throw error;
     }
+
+    this.NatsConn.closed().then(async () => {
+      this.logger!.log('Connection Lost to NATS Server.');
+    });
+
     return true;
   }
 
