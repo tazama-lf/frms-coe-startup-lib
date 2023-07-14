@@ -95,7 +95,7 @@ export class JetstreamService implements IStartupService {
     }
 
     try {
-      this.logger.log(`Connected to ${this.NatsConn.getServer()}`);
+      this.logger.log(`Connected to ${this.NatsConn.getServer()}, with config:\n${JSON.stringify(startupConfig, null, 4)}`);
       this.functionName = startupConfig.functionName.replace(/\./g, '_');
 
       // Jetstream setup

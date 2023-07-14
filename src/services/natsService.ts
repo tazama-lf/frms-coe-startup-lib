@@ -99,7 +99,7 @@ export class NatsService implements IStartupService {
     try {
       // Connect to NATS Server
       this.NatsConn = await connect(this.server);
-      this.logger.log(`Connected to ${this.NatsConn.getServer()}`);
+      this.logger.log(`Connected to ${this.NatsConn.getServer()}, with config:\n${JSON.stringify(startupConfig, null, 4)}`);
       this.functionName = startupConfig.functionName.replace(/\./g, '_');
 
       // Init producer streams
