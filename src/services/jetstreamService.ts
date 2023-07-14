@@ -86,16 +86,17 @@ export class JetstreamService implements IStartupService {
    */
   async initProducer(loggerService?: ILoggerService): Promise<boolean> {
     await this.validateEnvironment();
-    // Connect to NATS Server
-    this.NatsConn = await connect(this.server);
     if (loggerService) {
       this.logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
     } else {
       this.logger = console;
     }
-
+    
     try {
-      this.logger.log(`Connected to ${this.NatsConn.getServer()}, with config:\n${JSON.stringify(startupConfig, null, 4)}`);
+      // Connect to NATS Server
+      this.logger.log(`Attempting connection to NATS, with config:\n${JSON.stringify(startupConfig, null, 4)}`);
+      this.NatsConn = await connect(this.server);
+      this.logger.log(`Connected to ${this.NatsConn.getServer()}`);
       this.functionName = startupConfig.functionName.replace(/\./g, '_');
 
       // Jetstream setup
