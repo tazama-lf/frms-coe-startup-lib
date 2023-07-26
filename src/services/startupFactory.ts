@@ -22,11 +22,28 @@ export class StartupFactory implements IStartupService {
     }
   }
 
+  /* eslint-disable @typescript-eslint/no-misused-promises */
   async init(onMessage: onMessageFunction, loggerService?: ILoggerService | undefined): Promise<boolean> {
+    process.on('uncaughtException', async (): Promise<void> => {
+      await this.startupService.init(onMessage, loggerService);
+    });
+
+    process.on('unhandledRejection', async (): Promise<void> => {
+      await this.startupService.init(onMessage, loggerService);
+    });
+
     return await this.startupService.init(onMessage, loggerService);
   }
 
   async initProducer(loggerService?: ILoggerService | undefined): Promise<boolean> {
+    process.on('uncaughtException', async (): Promise<void> => {
+      await this.startupService.initProducer(loggerService);
+    });
+
+    process.on('unhandledRejection', async (): Promise<void> => {
+      await this.startupService.initProducer(loggerService);
+    });
+
     return await this.startupService.initProducer(loggerService);
   }
 
