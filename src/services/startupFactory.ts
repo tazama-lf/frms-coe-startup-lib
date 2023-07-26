@@ -22,12 +22,29 @@ export class StartupFactory implements IStartupService {
     }
   }
 
-  async init(onMessage: onMessageFunction, loggerService?: ILoggerService | undefined): Promise<boolean> {
-    return await this.startupService.init(onMessage, loggerService);
+  /* eslint-disable @typescript-eslint/no-misused-promises */
+  async init(onMessage: onMessageFunction, loggerService?: ILoggerService | undefined): Promise<void> {
+    process.on('uncaughtException', async (): Promise<void> => {
+      await this.startupService.init(onMessage, loggerService);
+    });
+
+    process.on('unhandledRejection', async (): Promise<void> => {
+      await this.startupService.init(onMessage, loggerService);
+    });
+
+    await this.startupService.init(onMessage, loggerService);
   }
 
-  async initProducer(loggerService?: ILoggerService | undefined): Promise<boolean> {
-    return await this.startupService.initProducer(loggerService);
+  async initProducer(loggerService?: ILoggerService | undefined): Promise<void> {
+    process.on('uncaughtException', async (): Promise<void> => {
+      await this.startupService.initProducer(loggerService);
+    });
+
+    process.on('unhandledRejection', async (): Promise<void> => {
+      await this.startupService.initProducer(loggerService);
+    });
+
+    await this.startupService.initProducer(loggerService);
   }
 
   async handleResponse(response: unknown, subject?: string[] | undefined): Promise<void> {

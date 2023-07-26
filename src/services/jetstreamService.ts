@@ -45,7 +45,7 @@ export class JetstreamService implements IStartupService {
    * @return {*}  {Promise<boolean>}
    */
 
-  async init(onMessage: onMessageFunction, loggerService?: ILoggerService): Promise<boolean> {
+  async init(onMessage: onMessageFunction, loggerService?: ILoggerService): Promise<void> {
     try {
       // Validate additional Environmental Variables.
       if (!startupConfig.consumerStreamName) {
@@ -55,7 +55,10 @@ export class JetstreamService implements IStartupService {
       this.onMessage = onMessage;
       await this.initProducer(loggerService);
       // Guard statement to ensure initProducer was successful
-      if (!this.NatsConn || !this.jsm || !this.js || !this.logger) return await Promise.resolve(false);
+      if (!this.NatsConn || !this.jsm || !this.js || !this.logger) {
+        await Promise.resolve();
+        return;
+      }
 
       // Add consumer streams
       this.consumerStreamName = startupConfig.consumerStreamName; // "RuleRequest";
@@ -66,7 +69,7 @@ export class JetstreamService implements IStartupService {
       this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(err)}`);
       throw err;
     }
-    return await Promise.resolve(true);
+    // return await Promise.resolve(true);
   }
 
   /**
@@ -84,7 +87,7 @@ export class JetstreamService implements IStartupService {
    *
    * @return {*}  {Promise<boolean>}
    */
-  async initProducer(loggerService?: ILoggerService): Promise<boolean> {
+  async initProducer(loggerService?: ILoggerService): Promise<void> {
     await this.validateEnvironment();
     if (loggerService) {
       this.logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
@@ -127,8 +130,7 @@ export class JetstreamService implements IStartupService {
         }
       }
     });
-
-    return await Promise.resolve(true);
+    // return await Promise.resolve(true);
   }
 
   async validateEnvironment(): Promise<void> {

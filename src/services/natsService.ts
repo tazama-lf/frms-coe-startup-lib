@@ -31,7 +31,7 @@ export class NatsService implements IStartupService {
    * @return {*}  {Promise<boolean>}
    */
 
-  async init(onMessage: onMessageFunction, loggerService?: ILoggerService): Promise<boolean> {
+  async init(onMessage: onMessageFunction, loggerService?: ILoggerService): Promise<void> {
     try {
       // Validate additional Environmental Variables.
       if (!startupConfig.consumerStreamName) {
@@ -39,7 +39,10 @@ export class NatsService implements IStartupService {
       }
 
       await this.initProducer(loggerService);
-      if (!this.NatsConn || !this.logger) return await Promise.resolve(false);
+      if (!this.NatsConn || !this.logger) {
+        await Promise.resolve();
+        return;
+      }
 
       // this promise indicates the client closed
       const done = this.NatsConn.closed();
@@ -61,7 +64,6 @@ export class NatsService implements IStartupService {
       this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(err)}`);
       throw err;
     }
-    return true;
   }
 
   async subscribe(subscription: Subscription, onMessage: onMessageFunction): Promise<void> {
@@ -88,7 +90,7 @@ export class NatsService implements IStartupService {
    * @return {*}  {Promise<boolean>}
    */
 
-  async initProducer(loggerService?: ILoggerService): Promise<boolean> {
+  async initProducer(loggerService?: ILoggerService): Promise<void> {
     await this.validateEnvironment();
     if (loggerService) {
       this.logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
@@ -113,8 +115,6 @@ export class NatsService implements IStartupService {
     this.NatsConn.closed().then(async () => {
       this.logger!.log('Connection Lost to NATS Server.');
     });
-
-    return true;
   }
 
   async validateEnvironment(): Promise<void> {
