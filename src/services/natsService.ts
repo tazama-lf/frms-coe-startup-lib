@@ -8,14 +8,14 @@ export class NatsService implements IStartupService {
   server = {
     servers: startupConfig.serverUrl,
   };
-  
+
   producerStreamName = '';
   consumerStreamName = '';
   functionName = '';
   NatsConn?: NatsConnection;
   logger?: ILoggerService | Console;
   jc = JSONCodec();
-  
+
   /**
    * Initialize Nats consumer, supplying a callback function to call every time a new message comes in.
    *
