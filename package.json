@@ -20,7 +20,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@frmscoe/frms-coe-lib": "^0.3.7",
+    "@frmscoe/frms-coe-lib": "^0.4.0",
     "arangojs": "^8.3.0",
     "fast-json-stringify": "^5.8.0",
     "ioredis": "^5.3.2",
