@@ -3,6 +3,8 @@ import { type ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { type onMessageFunction } from '../types/onMessageFunction';
 import { type IStartupService } from '..';
+import fastJson from 'fast-json-stringify';
+import { messageSchema } from '@frmscoe/frms-coe-lib/lib/helpers/schemas/message';
 
 export class NatsService implements IStartupService {
   server = {
@@ -14,6 +16,7 @@ export class NatsService implements IStartupService {
   functionName = '';
   NatsConn?: NatsConnection;
   logger?: ILoggerService | Console;
+  #serialise = fastJson(messageSchema as Record<string, unknown>);
 
   /**
    * Initialize Nats consumer, supplying a callback function to call every time a new message comes in.
@@ -141,7 +144,7 @@ export class NatsService implements IStartupService {
    */
   async handleResponse(response: unknown, subject?: string[]): Promise<void> {
     const sc = StringCodec();
-    const res = JSON.stringify(response);
+    const res = this.#serialise(response);
 
     if (this.producerStreamName && this.NatsConn) {
       if (!subject) {
