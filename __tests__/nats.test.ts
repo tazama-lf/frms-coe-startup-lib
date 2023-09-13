@@ -21,7 +21,7 @@ describe('init', () => {
       // Do stuff
       const req = JSON.parse(reqObj as string);
       req.Test = { some: 'val', another: 'one' };
-      const resp = JSON.stringify(req);
+      const resp = req;
 
       // Done, so call response method
       handleResponse(resp, []);
@@ -44,7 +44,7 @@ describe('init', () => {
       // Do stuff
       const req = JSON.parse(reqObj as string);
       req.Test = { some: 'val', another: 'one' };
-      const resp = JSON.stringify(req);
+      const resp = req;
 
       // Done, so call response method
       handleResponse(resp, []);

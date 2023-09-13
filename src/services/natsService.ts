@@ -1,10 +1,11 @@
-import { StringCodec, connect, type NatsConnection, type Subscription } from 'nats';
+import { connect, type NatsConnection, type Subscription } from 'nats';
 import { type ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { type onMessageFunction } from '../types/onMessageFunction';
 import { type IStartupService } from '..';
 import fastJson from 'fast-json-stringify';
 import { messageSchema } from '@frmscoe/frms-coe-lib/lib/helpers/schemas/message';
+import FRMSMessage from '@frmscoe/frms-coe-lib/lib/helpers/protobuf';
 
 export class NatsService implements IStartupService {
   server = {
@@ -48,7 +49,7 @@ export class NatsService implements IStartupService {
       const done = this.NatsConn.closed();
 
       // Add consumer streams
-      this.consumerStreamName = startupConfig.consumerStreamName; // "RuleRequest";
+      this.consumerStreamName = startupConfig.consumerStreamName;
       const consumerStreamNames = this.consumerStreamName.split(',');
       const subs: Subscription[] = [];
       for (const consumerStream of consumerStreamNames) {
@@ -70,8 +71,9 @@ export class NatsService implements IStartupService {
   async subscribe(subscription: Subscription, onMessage: onMessageFunction): Promise<void> {
     for await (const message of subscription) {
       console.debug(`${Date.now().toLocaleString()} sid:[${message?.sid}] subject:[${message.subject}]: ${message.data.length}`);
-      const request = message.json<string>();
-      await onMessage(request, this.handleResponse);
+      const messageDecoded = FRMSMessage.decode(message.data);
+      const messageObject = FRMSMessage.toObject(messageDecoded);
+      await onMessage(messageObject, this.handleResponse);
     }
   }
 
@@ -142,16 +144,16 @@ export class NatsService implements IStartupService {
    *
    * @return {*}  {Promise<void>}
    */
-  async handleResponse(response: unknown, subject?: string[]): Promise<void> {
-    const sc = StringCodec();
-    const res = this.#serialise(response);
+  async handleResponse(response: object, subject?: string[]): Promise<void> {
+    const message = FRMSMessage.create(response);
+    const messageBuffer = FRMSMessage.encode(message).finish();
 
     if (this.producerStreamName && this.NatsConn) {
       if (!subject) {
-        this.NatsConn.publish(this.producerStreamName, sc.encode(res));
+        this.NatsConn.publish(this.producerStreamName, messageBuffer);
       } else {
         for (const sub of subject) {
-          this.NatsConn.publish(sub, sc.encode(res));
+          this.NatsConn.publish(sub, messageBuffer);
         }
       }
     }
