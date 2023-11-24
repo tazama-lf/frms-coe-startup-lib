@@ -13,7 +13,7 @@ export class NatsService implements IStartupService {
   };
 
   producerStreamName = '';
-  consumerStreamName = '';
+  consumerStreamName: string[] | undefined;
   functionName = '';
   NatsConn?: NatsConnection;
   logger?: ILoggerService | Console;
@@ -35,24 +35,30 @@ export class NatsService implements IStartupService {
    * @return {*}  {Promise<boolean>}
    */
 
-  async init(onMessage: onMessageFunction, loggerService?: ILoggerService): Promise<boolean> {
+  async init(
+    onMessage: onMessageFunction,
+    loggerService?: ILoggerService,
+    parConsumerStreamNames?: string[],
+    parProducerStreamName?: string,
+  ): Promise<boolean> {
     try {
       // Validate additional Environmental Variables.
-      if (!startupConfig.consumerStreamName) {
-        throw new Error(`No Consumer Stream Name Provided in environmental Variable`);
+      if (!startupConfig.consumerStreamName && !parConsumerStreamNames?.length) {
+        throw new Error(`No Consumer Stream Name Provided in environmental Variable or on startup as an arguement`);
       }
+      if (parProducerStreamName) startupConfig.producerStreamName = parProducerStreamName;
+      if (parConsumerStreamNames) startupConfig.consumerStreamName = String(parConsumerStreamNames);
 
-      await this.initProducer(loggerService);
+      await this.initProducer(loggerService, parProducerStreamName);
       if (!this.NatsConn || !this.logger) return await Promise.resolve(false);
 
       // this promise indicates the client closed
       const done = this.NatsConn.closed();
 
       // Add consumer streams
-      this.consumerStreamName = startupConfig.consumerStreamName;
-      const consumerStreamNames = this.consumerStreamName.split(',');
+      this.consumerStreamName = startupConfig.consumerStreamName.split(',');
       const subs: Subscription[] = [];
-      for (const consumerStream of consumerStreamNames) {
+      for (const consumerStream of this.consumerStreamName) {
         subs.push(this.NatsConn.subscribe(`${consumerStream}`, { queue: `${this.functionName}` }));
       }
 
@@ -93,8 +99,8 @@ export class NatsService implements IStartupService {
    * @return {*}  {Promise<boolean>}
    */
 
-  async initProducer(loggerService?: ILoggerService): Promise<boolean> {
-    await this.validateEnvironment();
+  async initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean> {
+    await this.validateEnvironment(parProducerStreamName);
     if (loggerService) {
       this.logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
     } else {
@@ -110,6 +116,7 @@ export class NatsService implements IStartupService {
 
       // Init producer streams
       this.producerStreamName = startupConfig.producerStreamName;
+      if (parProducerStreamName) this.producerStreamName = parProducerStreamName;
     } catch (error) {
       this.logger.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(error)}`);
       throw error;
@@ -122,9 +129,9 @@ export class NatsService implements IStartupService {
     return true;
   }
 
-  async validateEnvironment(): Promise<void> {
-    if (!startupConfig.producerStreamName) {
-      throw new Error(`No Producer Stream Name Provided in environmental Variable`);
+  async validateEnvironment(parProducerStreamName?: string): Promise<void> {
+    if (!startupConfig.producerStreamName && !parProducerStreamName) {
+      throw new Error(`No Producer Stream Name Provided in environmental Variable or on startup as an arguement`);
     }
 
     if (!startupConfig.serverUrl) {
