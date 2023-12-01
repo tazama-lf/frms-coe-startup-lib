@@ -23,28 +23,33 @@ export class StartupFactory implements IStartupService {
   }
 
   /* eslint-disable @typescript-eslint/no-misused-promises */
-  async init(onMessage: onMessageFunction, loggerService?: ILoggerService | undefined): Promise<boolean> {
+  async init(
+    onMessage: onMessageFunction,
+    loggerService?: ILoggerService | undefined,
+    parConsumerStreamNames?: string[],
+    parProducerStreamName?: string,
+  ): Promise<boolean> {
     process.on('uncaughtException', async (): Promise<void> => {
-      await this.startupService.init(onMessage, loggerService);
+      await this.startupService.init(onMessage, loggerService, parConsumerStreamNames, parProducerStreamName);
     });
 
     process.on('unhandledRejection', async (): Promise<void> => {
-      await this.startupService.init(onMessage, loggerService);
+      await this.startupService.init(onMessage, loggerService, parConsumerStreamNames, parProducerStreamName);
     });
 
-    return await this.startupService.init(onMessage, loggerService);
+    return await this.startupService.init(onMessage, loggerService, parConsumerStreamNames, parProducerStreamName);
   }
 
-  async initProducer(loggerService?: ILoggerService | undefined): Promise<boolean> {
+  async initProducer(loggerService?: ILoggerService | undefined, parProducerStreamName?: string): Promise<boolean> {
     process.on('uncaughtException', async (): Promise<void> => {
-      await this.startupService.initProducer(loggerService);
+      await this.startupService.initProducer(loggerService, parProducerStreamName);
     });
 
     process.on('unhandledRejection', async (): Promise<void> => {
-      await this.startupService.initProducer(loggerService);
+      await this.startupService.initProducer(loggerService, parProducerStreamName);
     });
 
-    return await this.startupService.initProducer(loggerService);
+    return await this.startupService.initProducer(loggerService, parProducerStreamName);
   }
 
   async handleResponse(response: object, subject?: string[] | undefined): Promise<void> {
