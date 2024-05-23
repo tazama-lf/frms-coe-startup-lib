@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # frms-coe-lib
 
 FRMS Center of Excellence startup library.

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import { connect, type NatsConnection, type Subscription } from 'nats';
 import { type ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
