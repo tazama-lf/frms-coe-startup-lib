@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // redis and aragojs is mocked
 // setup.jest.js.
 import { StartupFactory } from '../src';
