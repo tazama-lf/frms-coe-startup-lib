@@ -6,6 +6,7 @@ src/*.ts
 *.tsx
 .eslintrc.js
 .eslintignore
+eslint.config.mjs
 jest.config.ts
 setup.jest.js
 coverage
@@ -15,3 +16,4 @@ dist/
 __tests__/
 .husky/
 .vscode
+.editorconfig
