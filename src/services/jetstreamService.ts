@@ -51,7 +51,7 @@ export class JetstreamService implements IStartupService {
     try {
       // Validate additional Environmental Variables.
       if (!startupConfig.consumerStreamName) {
-        throw new Error(`No Consumer Stream Name Provided in environmental Variable`);
+        throw new Error('No Consumer Stream Name Provided in environmental Variable');
       }
 
       this.onMessage = onMessage;
@@ -65,8 +65,18 @@ export class JetstreamService implements IStartupService {
 
       if (this.consumerStreamName) await this.consume(this.js, onMessage, this.consumerStreamName, this.functionName);
     } catch (err) {
-      this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(err)}`);
-      throw err;
+      let error: Error;
+      let errorMessage = '';
+      if (err instanceof Error) {
+        error = err;
+        errorMessage = error.message;
+      } else {
+        const strErr = JSON.stringify(err);
+        errorMessage = strErr;
+        error = new Error(errorMessage);
+      }
+      this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${errorMessage}`);
+      throw error;
     }
     return await Promise.resolve(true);
   }
@@ -108,8 +118,18 @@ export class JetstreamService implements IStartupService {
       // Add producer streams
       this.producerStreamName = startupConfig.producerStreamName; // `RuleResponse${functionName}`;
       await this.createStream(this.jsm, this.producerStreamName);
-    } catch (error) {
-      this.logger.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(error)}`);
+    } catch (err) {
+      let error: Error;
+      let errorMessage = '';
+      if (err instanceof Error) {
+        error = err;
+        errorMessage = error.message;
+      } else {
+        const strErr = JSON.stringify(err);
+        errorMessage = strErr;
+        error = new Error(errorMessage);
+      }
+      this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${errorMessage}`);
       throw error;
     }
 
@@ -118,13 +138,13 @@ export class JetstreamService implements IStartupService {
       let connected = false;
 
       while (!connected) {
-        this.logger!.log(`Attempting to recconect to NATS...`);
+        this.logger!.log('Attempting to recconect to NATS...');
         connected = await this.connectNats();
         if (!connected) {
-          this.logger!.warn(`Unable to connect, retrying....`);
+          this.logger!.warn('Unable to connect, retrying....');
           await new Promise((resolve) => setTimeout(resolve, 5000));
         } else {
-          this.logger!.log(`Reconnected to nats`);
+          this.logger!.log('Reconnected to nats');
           break;
         }
       }
@@ -135,15 +155,15 @@ export class JetstreamService implements IStartupService {
 
   async validateEnvironment(): Promise<void> {
     if (!startupConfig.producerStreamName) {
-      throw new Error(`No Producer Stream Name Provided in environmental Variable`);
+      throw new Error('No Producer Stream Name Provided in environmental Variable');
     }
 
     if (!startupConfig.serverUrl) {
-      throw new Error(`No Server URL was Provided in environmental Variable`);
+      throw new Error('No Server URL was Provided in environmental Variable');
     }
 
     if (!startupConfig.functionName) {
-      throw new Error(`No Function Name was Provided in environmental Variable`);
+      throw new Error('No Function Name was Provided in environmental Variable');
     }
     await Promise.resolve(undefined);
   }
@@ -262,6 +282,7 @@ export class JetstreamService implements IStartupService {
       console.debug(`${Date.now().toLocaleString()} S:[${message?.seq}] Q:[${message.subject}]: ${message.data.length}`);
       const request = message.json<string>();
       try {
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         await onMessage(request, this.handleResponse);
       } catch (error) {
         this.logger?.error(`Error while handling message: \r\n${error as string}`);
