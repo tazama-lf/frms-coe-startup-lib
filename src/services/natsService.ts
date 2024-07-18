@@ -1,10 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import { connect, type NatsConnection, type Subscription } from 'nats';
 import { type ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { type onMessageFunction } from '../types/onMessageFunction';
 import { type IStartupService } from '..';
-import fastJson from 'fast-json-stringify';
-import { messageSchema } from '@frmscoe/frms-coe-lib/lib/helpers/schemas/message';
 import FRMSMessage from '@frmscoe/frms-coe-lib/lib/helpers/protobuf';
 
 export class NatsService implements IStartupService {
@@ -17,7 +17,6 @@ export class NatsService implements IStartupService {
   functionName = '';
   NatsConn?: NatsConnection;
   logger?: ILoggerService | Console;
-  #serialise = fastJson(messageSchema as Record<string, unknown>);
 
   /**
    * Initialize Nats consumer, supplying a callback function to call every time a new message comes in.
@@ -44,16 +43,13 @@ export class NatsService implements IStartupService {
     try {
       // Validate additional Environmental Variables.
       if (!startupConfig.consumerStreamName && !parConsumerStreamNames?.length) {
-        throw new Error(`No Consumer Stream Name Provided in environmental Variable or on startup as an arguement`);
+        throw new Error('No Consumer Stream Name Provided in environmental Variable or on startup as an arguement');
       }
       if (parProducerStreamName) startupConfig.producerStreamName = parProducerStreamName;
       if (parConsumerStreamNames) startupConfig.consumerStreamName = String(parConsumerStreamNames);
 
       await this.initProducer(loggerService, parProducerStreamName);
       if (!this.NatsConn || !this.logger) return await Promise.resolve(false);
-
-      // this promise indicates the client closed
-      const done = this.NatsConn.closed();
 
       // Add consumer streams
       this.consumerStreamName = startupConfig.consumerStreamName.split(',');
@@ -68,8 +64,18 @@ export class NatsService implements IStartupService {
         }
       })();
     } catch (err) {
-      this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(err)}`);
-      throw err;
+      let error: Error;
+      let errorMessage = '';
+
+      if (err instanceof Error) {
+        error = err;
+        errorMessage = error.message;
+      } else {
+        errorMessage = JSON.stringify(err);
+        error = new Error(errorMessage);
+      }
+      this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${errorMessage}`);
+      throw error;
     }
     return true;
   }
@@ -79,6 +85,7 @@ export class NatsService implements IStartupService {
       console.debug(`${Date.now().toLocaleString()} sid:[${message?.sid}] subject:[${message.subject}]: ${message.data.length}`);
       const messageDecoded = FRMSMessage.decode(message.data);
       const messageObject = FRMSMessage.toObject(messageDecoded);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       await onMessage(messageObject, this.handleResponse);
     }
   }
@@ -117,8 +124,18 @@ export class NatsService implements IStartupService {
       // Init producer streams
       this.producerStreamName = startupConfig.producerStreamName;
       if (parProducerStreamName) this.producerStreamName = parProducerStreamName;
-    } catch (error) {
-      this.logger.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${JSON.stringify(error)}`);
+    } catch (err) {
+      let error: Error;
+      let errorMessage = '';
+
+      if (err instanceof Error) {
+        error = err;
+        errorMessage = error.message;
+      } else {
+        errorMessage = JSON.stringify(err);
+        error = new Error(errorMessage);
+      }
+      this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${errorMessage}`);
       throw error;
     }
 
@@ -131,15 +148,15 @@ export class NatsService implements IStartupService {
 
   async validateEnvironment(parProducerStreamName?: string): Promise<void> {
     if (!startupConfig.producerStreamName && !parProducerStreamName) {
-      throw new Error(`No Producer Stream Name Provided in environmental Variable or on startup as an arguement`);
+      throw new Error('No Producer Stream Name Provided in environmental Variable or on startup as an arguement');
     }
 
     if (!startupConfig.serverUrl) {
-      throw new Error(`No Server URL was Provided in environmental Variable`);
+      throw new Error('No Server URL was Provided in environmental Variable');
     }
 
     if (!startupConfig.functionName) {
-      throw new Error(`No Function Name was Provided in environmental Variable`);
+      throw new Error('No Function Name was Provided in environmental Variable');
     }
   }
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import { config as dotenv } from 'dotenv';
 import path from 'path';
 
@@ -68,12 +70,12 @@ export interface IStartupConfig {
 
 export const startupConfig: IStartupConfig = {
   startupType: process.env.STARTUP_TYPE as 'nats' | 'jetstream',
-  env: process.env.NODE_ENV as string,
-  serverUrl: process.env.SERVER_URL as string,
-  functionName: process.env.FUNCTION_NAME as string,
-  producerStreamName: process.env.PRODUCER_STREAM as string,
-  consumerStreamName: process.env.CONSUMER_STREAM as string,
-  streamSubject: process.env.STREAM_SUBJECT as string,
+  env: process.env.NODE_ENV!,
+  serverUrl: process.env.SERVER_URL!,
+  functionName: process.env.FUNCTION_NAME!,
+  producerStreamName: process.env.PRODUCER_STREAM!,
+  consumerStreamName: process.env.CONSUMER_STREAM!,
+  streamSubject: process.env.STREAM_SUBJECT!,
   producerRetentionPolicy: (process.env.PRODUCER_RETENTION_POLICY as 'Limits' | 'Interest' | 'Workqueue') || 'Workqueue',
   ackPolicy: (process.env.ACK_POLICY as 'All' | 'Explicit') || 'Explicit',
   producerStorage: (process.env.PRODUCER_STORAGE as 'File' | 'Memory') || 'Memory',
