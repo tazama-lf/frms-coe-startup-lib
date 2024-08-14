@@ -150,17 +150,16 @@ If provided in the call to `init()`, this will be a subject to listen for messag
       - `warn(message: string): void`: Logs a warning message.
       - `error(message: string | Error): void`: Logs an error message.
 
-5. **Types**
-  1. **onMessageFunction**
+4. **Types**
 
+  - **onMessageFunction**
     - **Type**: `(reqObj: unknown, handleResponse: responseCallback) => Promise<void>`
       - **Description**: Represents a function to handle incoming messages.
       - **Parameters**:
         - `reqObj: unknown`: The request object.
         - `handleResponse: responseCallback`: The callback to handle the response.
 
-  2. **responseCallback**
-
+  - **responseCallback**
     - **Type**: `(response: object, subject: string[]) => Promise<void>`
       - **Description**: Represents a callback function to handle responses.
       - **Parameters**:
