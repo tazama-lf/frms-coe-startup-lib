@@ -6,6 +6,7 @@
 - [Installation](#installation)
 - [Usage](#usage)
 - [Modules and Classes](#modules-and-classes)
+- [Sequence Diagram](#sequence-diagram)
 - [Configuration](#configuration)
 - [Contributing](#contributing)
 - [License](#license)
@@ -52,7 +53,7 @@ Once installed, you can import the library in your project:
 
 4. **Environment Configuration:**
 
-    Set up your environment configuration using a `.env` file or environment variables. Refer to the library's [template](.env.template) for details on necessary environment variables.
+    Set up your environment configuration using a `.env` file or environment variables. Refer to the library's [template](.env.template.nats) for details on necessary environment variables.
 
 ## Usage
 
@@ -74,7 +75,7 @@ const server: IStartupService = new StartupFactory();
 server.init(handleTransaction);
 ```
 
-This library uses protobuf to encode and decode messages. The format is defined in the `frms-coe-lib` and for your message to be transmitted without any data loss, you should ensure it conforms to the protobuf definition.
+This library uses protobuf to encode and decode messages. The format is defined in the [`frms-coe-lib`](https://github.com/tazama-lf/frms-coe-lib/blob/9151cb58dfa7feeff4bc932cc4ea7d3f43c85a49/src/helpers/proto/Full.proto#L6) and for your message to be transmitted without any data loss, you should ensure it conforms to the protobuf definition.
 
 The `init` function has **optional** parameters
 ```js
@@ -197,6 +198,71 @@ server.init(onMessage);
         - `response: object`: The response object.
         - `subject: string[]`: The subject(s) to which the response should be sent.
 
+## Sequence Diagram
+```mermaid
+sequenceDiagram
+
+    participant TS as Transaction<br>System
+    participant TMS as Transaction<br>Monitoring<br>Service API
+    participant ED as Event<br>Director
+    participant RP as Rule<br>Processors
+    participant TP as Typology<br>Processor
+    participant IS as Interdiction<br>Service
+    participant TADP as Transaction Aggregation<br>and<br>Decisioning Processor
+    participant AS as Alert<br>Service
+    participant CMS as Case<br>Management<br>System
+    participant NATS as NATS<br>Service
+
+    %% Startup Section %%
+    note over TS: Setup - init(func, logger, consumer[], producer)
+    ED ->> NATS: init(func, logger, "event-director",)
+    RP ->> NATS: init(func, logger, ["sub-rule-xxx"],"pub-rule-xxx") per rule processor
+    TP ->> NATS: init(func, logger, ["pub-rule-xxx"],"temp-pub-tadp") per typology
+    IS ->> NATS: init(func, logger, ["typology-yyy"],{external})
+    TADP ->> NATS: init(func, logger, ["typology-yyy"],{})
+    AS ->> NATS: init(func, logger, ["tadp"],{external})
+
+    %% Publish Section %%
+    note over TS: Publish
+    TS ->> TMS: POST(transaction)
+    TMS ->> ED: publish to "event-director"
+    ED ->> RP: publish to "sub-rule-xxx"
+    RP ->> TP: publish to "pub-rule-xxx"
+    TP ->> IS: interdiction: publish to "interdiction-service"
+    IS ->> TS: interdiction(typology result)
+    TP ->> TADP: publish to "typology-yyy"
+    TADP ->> AS: alert: publish to "alert-service"
+    AS ->> CMS: alert(evaluationResult)
+```
+
+```mermaid
+flowchart LR
+
+    TS[Transaction<br>System] --> TMS[Transaction<br>Monitoring<br>Service API]
+    TMS --> EDin[event-director]:::nats
+    EDin --> ED[Event<br>Director]
+    ED --> RPin001[sub-rule-001@1.0.0]:::nats & RPin500[...]:::nats & RPin999[sub-rule-999@1.0.0]:::nats
+    RPin001 --> RP001[Rule<br>Processor<br>001]
+    RPin500 --> RP500[...]
+    RPin999 --> RP999[Rule<br>Processor<br>999]
+    RP001 --> RPout001[pub-rule-001@1.0.0]:::nats
+    RP500 --> RPout500[...]:::nats
+    RP999 --> RPout999[pub-rule-999@1.0.0]:::nats
+    RPout001 --> TypP[Typology<br>Processor]
+    RPout500 --> TypP[Typology<br>Processor]
+    RPout999 --> TypP[Typology<br>Processor]
+    TypP --> Typ001[typology-001@1.0.0]:::nats & Typ500[...]:::nats & Typ999[typology-999@1.0.0]:::nats & IS[interdiction-service]:::nats
+    Typ001 --> TADP[Transaction Aggregation<br>and<br>Decisioning Processor]
+    Typ500 --> TADP
+    Typ999 --> TADP
+    TADP --> AS[Alert<br>Service]:::nats
+
+    NATS[NATS<br>Subject]:::nats
+
+    classDef nats stroke:#00f,stroke-width:4px;
+```
+
+
 ## Configuration
 
 ### Environment Variables
@@ -216,11 +282,7 @@ The `frms-coe-startup-lib` library uses environment variables to configure the s
 
 ### Configuration Files
 
-The library supports configuration through `.env` files or other configuration file formats. These files can be used to set environment variables and other settings.
-
-### Message Broker Configuration
-
-The message broker (NATS or JetStream) configuration is determined by the `STARTUP_TYPE` and related environment variables. The configuration includes details such as server URL, stream names, and acknowledgment policies.
+The library supports configuration through [`.env`](.env.template.nats) files or other configuration file formats. These files can be used to set environment variables and other settings.
 
 ### Logging Configuration
 
