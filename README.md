@@ -30,7 +30,7 @@ The npm package is hosted on GitHub. Make sure you're authenticated with GitHub 
 ```
 Replace "some-secret" with your GitHub Token.
 
-To install the `frms-coe-lib` package, you can use npm.
+To install the `frms-coe-startup-lib` package, you can use npm.
 
 1. **Install via npm:**
 
