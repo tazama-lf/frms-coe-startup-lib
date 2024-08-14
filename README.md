@@ -13,11 +13,11 @@
 
 ## Overview
 
-`frms-coe-startup-lib` is a library designed to facilitate how messages are transmitted across microservices in the Tazama ecosystem. The library is a wrapper around NATS with JetStream support, allowing for flexible and scalable service deployment.
+`frms-coe-startup-lib` is a library designed to facilitate how messages are transmitted across microservices in the Tazama ecosystem. The library is a wrapper around [NATS](https://nats.io), allowing for flexible and scalable service deployment.
 
 Key features:
-- **Service Initialization**: Abstractions for initializing NATS
-- **Message Handling**: Standardized interfaces for processing incoming messages and handling responses.
+- **Service Initialization**: Abstractions for initializing NATS.
+- **Message Handling**: Standardized interfaces for processing incoming messages.
 - **Configuration Management**: Tools for loading and managing service-specific configurations.
 - **Logging**: Integration with custom logging services for consistent log management across services.
 
@@ -57,11 +57,11 @@ Once installed, you can import the library in your project:
 
 ## Usage
 
-The `frms-coe-startup-lib` library provides an abstraction for initializing and managing messaging services like NATS. It includes the `StartupFactory` and `IStartupService` interface for creating and managing services.
+The `frms-coe-startup-lib` library provides an abstraction for initializing and managing NATS. This includes encoding the payload before sending it as well as decoding the payload after it has been received. It includes the `StartupFactory` and `IStartupService` interface for creating and managing services.
 
-### 1. **Initializing a Service**
+### **Initializing a Service**
 
-The `StartupFactory` class initializes either a NATS or JetStream service based on the configuration. It implements the `IStartupService` interface. The `init` method of the `IStartupService` interface sets up the service to listen for incoming messages. The `onMessageFunction` callback is called with each received message.
+The `StartupFactory` class initializes NATS. It implements the `IStartupService` interface. The `init` method of the `IStartupService` interface sets up the service to listen for incoming messages. The `onMessageFunction` callback is called with each received message.
 
 **Example:**
 ```typescript
@@ -101,25 +101,6 @@ Will configure `ConsumerA`, `ConsumerB` and `ConsumerC` as consumers.
 
 #### `parProducerStreamName`
 If provided in the call to `init()`, this will be a subject to listen for messages on. If not provided, an environment variable: `PRODUCER_STREAM`, is read.
-
-
-### 2. **Handling Responses**
-
-The `handleResponse` publishes a message to the configured NATS subject.
-
-**Example:**
-```typescript
-import { IStartupService } from '@frmscoe/frms-coe-startup-lib';
-
-async function onMessage(req: unknown, handleResponse: (response: object) => void) {
-  console.log('Received request:', req);
-  handleResponse({ status: 'ok' });
-}
-
-const server: IStartupService = new StartupFactory();
-server.init(onMessage);
-```
-
 
 ## Modules and Classes
 
@@ -269,16 +250,12 @@ flowchart LR
 
 The `frms-coe-startup-lib` library uses environment variables to configure the startup process and service connections. Key environment variables include:
 
-- `STARTUP_TYPE`: Specifies the startup type (`nats` or `jetstream`).
+- `STARTUP_TYPE`: Specifies the startup type (`nats`).
 - `NODE_ENV`: The node environment (`development`, `production`, etc.).
 - `SERVER_URL`: The URL of the server (e.g., NATS server).
 - `FUNCTION_NAME`: The name of the function or service.
 - `PRODUCER_STREAM`: The name of the producer stream.
 - `CONSUMER_STREAM`: The name of the consumer stream.
-- `STREAM_SUBJECT`: The subject to subscribe to in the message broker.
-- `PRODUCER_RETENTION_POLICY`: Retention policy for the producer (`Limits`, `Interest`, `Workqueue`).
-- `ACK_POLICY`: Acknowledgment policy for the message broker (`All`, `Explicit`).
-- `PRODUCER_STORAGE`: Storage type (`File` or `Memory`).
 
 ### Configuration Files
 
