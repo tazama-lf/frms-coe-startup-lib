@@ -107,7 +107,7 @@ If provided in the call to `init()`, this will be a subject to listen for messag
 1. **Startup Factory**
 
   - **Class**: StartupFactory
-    - **Description**: Manages the initialization and handling of different startup services, either Jetstream or NATS.
+    - **Description**: Manages the initialization and handling of the message broker
     - **Methods**:
       - `init(onMessage: onMessageFunction, loggerService?: ILoggerService, parConsumerStreamNames?: string[], parProducerStreamName?: string): Promise<boolean>`: Initializes the startup service.
       - `initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean>`: Initializes the producer stream.
@@ -123,23 +123,11 @@ If provided in the call to `init()`, this will be a subject to listen for messag
       - `handleResponse(response: object, subject?: string[]): Promise<void>`: Handles responses and publishes them to the producer stream.
       - `subscribe(subscription: Subscription, onMessage: onMessageFunction): Promise<void>`: Subscribes to a NATS subject and processes incoming messages.
 
-3. **Jetstream Service**
-
-  - **Class**: JetstreamService
-    - **Description**: Manages the initialization and handling of Jetstream services, including creating streams and consumers.
-    - **Methods**:
-      - `init(onMessage: onMessageFunction, loggerService?: ILoggerService): Promise<boolean>`: Initializes the Jetstream service.
-      - `initProducer(loggerService?: ILoggerService): Promise<boolean>`: Initializes the producer stream for Jetstream.
-      - `handleResponse(response: unknown, subject?: string[]): Promise<void>`: Handles responses and publishes them to the producer stream.
-      - `createConsumer(functionName: string, jsm: JetStreamManager, consumerStreamName: string): Promise<void>`: Creates a consumer for Jetstream.
-      - `createStream(jsm: JetStreamManager, streamName: string, subjectName?: string): Promise<void>`: Creates a stream in Jetstream.
-      - `consume(js: JetStreamClient, onMessage: onMessageFunction, consumerStreamName: string, functionName: string): Promise<void>`: Consumes messages from a Jetstream consumer.
-
-4. **Interfaces**
+3. **Interfaces**
 
   - **Interface**: IStartupConfig
     - **Properties**:
-      - `startupType: 'nats' | 'jetstream'`: The type of service to start.
+      - `startupType: 'nats'`: The type of service to start.
       - `ackPolicy: 'None' | 'All' | 'Explicit' | 'NotSet'`: Acknowledgment policy.
       - `producerStorage: string`: Storage type for the producer.
       - `producerStreamName: string`: Name of the producer stream.
