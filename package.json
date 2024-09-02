@@ -1,17 +1,17 @@
 {
-  "name": "@frmscoe/frms-coe-startup-lib",
-  "version": "2.2.0",
+  "name": "@tazama-lf/frms-coe-startup-lib",
+  "version": "2.3.0-rc.0",
   "description": "FRMS Center of Excellence startup package library",
   "main": "lib/index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/frmscoe/frms-coe-startup-lib.git"
+    "url": "git+https://github.com/tazama-lf/frms-coe-startup-lib.git"
   },
   "files": [
     "lib"
   ],
   "publishConfig": {
-    "@frmscoe:registry": "https://npm.pkg.github.com/"
+    "@tazama-lf:registry": "https://npm.pkg.github.com/"
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",
@@ -28,7 +28,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@frmscoe/frms-coe-lib": "^4.0.0",
+    "@tazama-lf/frms-coe-lib": "4.2.0-alpha.6",
     "nats": "^2.14.0"
   },
   "keywords": [],
