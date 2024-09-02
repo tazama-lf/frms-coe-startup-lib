@@ -25,7 +25,7 @@ Key features:
 
 The npm package is hosted on GitHub. Make sure you're authenticated with GitHub and have the necessary permissions to access the package (`read:packages`). Create a [`.npmrc`](https://docs.npmjs.com/cli/v9/configuring-npm/npmrc?v=true) file if you currently do not have. Add the following content:
 ```.rc
-@frmscoe:registry=https://npm.pkg.github.com
+@tazama-lf:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=some-secret
 ```
 Replace "some-secret" with your GitHub Token.
@@ -35,7 +35,7 @@ To install the `frms-coe-startup-lib` package, you can use npm.
 1. **Install via npm:**
 
    ```sh
-   npm install @frmscoe/frms-coe-startup-lib
+   npm install @tazama-lf/frms-coe-startup-lib
    ```
 
 
@@ -44,7 +44,7 @@ To install the `frms-coe-startup-lib` package, you can use npm.
 Once installed, you can import the library in your project:
 
   ```typescript
-  import { StartupFactory } from '@frmscoe/frms-coe-startup-lib';
+  import { StartupFactory } from '@tazama-lf/frms-coe-startup-lib';
   ```
 
 3. **Dependencies:**
@@ -65,7 +65,7 @@ The `StartupFactory` class initializes NATS. It implements the `IStartupService`
 
 **Example:**
 ```typescript
-import { IStartupService } from '@frmscoe/frms-coe-startup-lib';
+import { IStartupService } from '@tazama-lf/frms-coe-startup-lib';
 
 async function handleTransaction(req: unknown) {
     console.log('received transaction', req)
