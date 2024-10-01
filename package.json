@@ -1,6 +1,6 @@
 {
   "name": "@tazama-lf/frms-coe-startup-lib",
-  "version": "2.3.0-rc.0",
+  "version": "2.3.0-rc.1",
   "description": "FRMS Center of Excellence startup package library",
   "main": "lib/index.js",
   "repository": {
