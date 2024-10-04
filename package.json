@@ -28,7 +28,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@tazama-lf/frms-coe-lib": "4.2.0-rc.1",
+    "@tazama-lf/frms-coe-lib": "4.2.0-rc.3",
     "nats": "^2.14.0"
   },
   "keywords": [],
