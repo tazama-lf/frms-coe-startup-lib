@@ -6,6 +6,8 @@ import { StartupFactory } from '../src';
 import { type responseCallback } from '../src/types/onMessageFunction';
 import { startupConfig } from '../src/interfaces/iStartupConfig';
 
+jest.mock('../src/interfaces/iStartupConfig', () => ({}));
+
 beforeAll(async () => {
   let server = {
     servers: '',
@@ -14,6 +16,9 @@ beforeAll(async () => {
 
 describe('init', () => {
   let natsSpy: jest.SpyInstance;
+  beforeAll(() => {
+    process.env.STARTUP_TYPE = 'nats';
+  });
   beforeEach(() => {
     // natsSpy = jest.spyOn(MockNatsjs,'connect');
   });
@@ -28,8 +33,8 @@ describe('init', () => {
       // Done, so call response method
       handleResponse(resp, []);
     }
+    jest.mock('../src/interfaces/iStartupConfig', () => ({ startupType: 'jetstream' }));
 
-    startupConfig.startupType = 'jetstream';
     const runServer = async (): Promise<void> => {
       for (let retryCount = 0; retryCount < 10; retryCount++) {
         let jsService = new StartupFactory();
@@ -52,7 +57,7 @@ describe('init', () => {
       handleResponse(resp, []);
     }
 
-    startupConfig.startupType = 'nats';
+    jest.mock('../src/interfaces/iStartupConfig', () => ({ startupType: 'nats' }));
     const runServer = async (): Promise<void> => {
       for (let retryCount = 0; retryCount < 10; retryCount++) {
         let jsService = new StartupFactory();

@@ -2,6 +2,7 @@
 
 import { config as dotenv } from 'dotenv';
 import path from 'path';
+import { validateEnvVar } from '@tazama-lf/frms-coe-lib/lib/helpers/env';
 
 // Load .env file into process.env if it exists. This is convenient for running locally.
 dotenv({
@@ -69,13 +70,13 @@ export interface IStartupConfig {
 }
 
 export const startupConfig: IStartupConfig = {
-  startupType: process.env.STARTUP_TYPE as 'nats' | 'jetstream',
-  env: process.env.NODE_ENV!,
-  serverUrl: process.env.SERVER_URL!,
-  functionName: process.env.FUNCTION_NAME!,
-  producerStreamName: process.env.PRODUCER_STREAM!,
-  consumerStreamName: process.env.CONSUMER_STREAM!,
-  streamSubject: process.env.STREAM_SUBJECT!,
+  startupType: validateEnvVar<'nats' | 'jetstream'>('STARTUP_TYPE', 'string'),
+  env: validateEnvVar<string>('NODE_ENV', 'string'),
+  serverUrl: validateEnvVar<string>('SERVER_URL', 'string'),
+  functionName: validateEnvVar<string>('FUNCTION_NAME', 'string'),
+  producerStreamName: validateEnvVar('PRODUCER_STREAM', 'string', true),
+  consumerStreamName: validateEnvVar('CONSUMER_STREAM', 'string', true),
+  streamSubject: validateEnvVar<string>('STREAM_SUBJECT', 'string', true),
   producerRetentionPolicy: (process.env.PRODUCER_RETENTION_POLICY as 'Limits' | 'Interest' | 'Workqueue') || 'Workqueue',
   ackPolicy: (process.env.ACK_POLICY as 'All' | 'Explicit') || 'Explicit',
   producerStorage: (process.env.PRODUCER_STORAGE as 'File' | 'Memory') || 'Memory',
