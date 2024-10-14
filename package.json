@@ -28,8 +28,8 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "nats": "^2.28.2"
     "@tazama-lf/frms-coe-lib": "4.2.0-rc.3",
+    "nats": "^2.28.2"
   },
   "keywords": [],
   "author": "",
