@@ -2,7 +2,7 @@
 
 import { config as dotenv } from 'dotenv';
 import path from 'path';
-import { validateEnvVar } from '@tazama-lf/frms-coe-lib/lib/helpers/env';
+import { validateEnvVar } from '@tazama-lf/frms-coe-lib/lib/config';
 
 // Load .env file into process.env if it exists. This is convenient for running locally.
 dotenv({
