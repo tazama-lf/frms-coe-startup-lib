@@ -5,7 +5,7 @@ import { type ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { type onMessageFunction } from '../types/onMessageFunction';
 import { type IStartupService } from '..';
-import FRMSMessage from '@frmscoe/frms-coe-lib/lib/helpers/protobuf';
+import FRMSMessage from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
 
 export class NatsService implements IStartupService {
   server = {
