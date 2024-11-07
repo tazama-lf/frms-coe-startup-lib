@@ -6,8 +6,9 @@ import { startupConfig } from '../interfaces/iStartupConfig';
 import { type onMessageFunction } from '../types/onMessageFunction';
 import { type IStartupService } from '..';
 import FRMSMessage from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
+import { type IRelay } from '../interfaces/iRelayService';
 
-export class NatsService implements IStartupService {
+export class NatsService implements IStartupService, IRelay {
   server = {
     servers: startupConfig.serverUrl,
   };
@@ -182,4 +183,6 @@ export class NatsService implements IStartupService {
       }
     }
   }
+
+  async relay(payload: Uint8Array): Promise<void> {}
 }
