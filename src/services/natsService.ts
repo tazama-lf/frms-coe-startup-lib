@@ -83,15 +83,10 @@ export class NatsService implements IStartupService {
   async subscribe(subscription: Subscription, onMessage: onMessageFunction): Promise<void> {
     for await (const message of subscription) {
       console.debug(`${Date.now().toLocaleString()} sid:[${message?.sid}] subject:[${message.subject}]: ${message.data.length}`);
-      if (startupConfig.natsDecodeResponse === false) {
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        await onMessage(message.data, this.handleResponse);
-      } else {
-        const messageDecoded = FRMSMessage.decode(message.data);
-        const messageObject = FRMSMessage.toObject(messageDecoded);
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        await onMessage(messageObject, this.handleResponse);
-      }
+      const messageDecoded = FRMSMessage.decode(message.data);
+      const messageObject = FRMSMessage.toObject(messageDecoded);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      await onMessage(messageObject, this.handleResponse);
     }
   }
 

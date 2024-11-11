@@ -67,14 +67,6 @@ export interface IStartupConfig {
    * @memberof IStartupConfig
    */
   streamSubject: string;
-
-  /**
-   *functionName: <string>process.env.NATS_DECODE_RESPONSE
-   *
-   * @type {boolean}
-   * @memberof IStartupConfig
-   */
-  natsDecodeResponse?: boolean;
 }
 
 export const startupConfig: IStartupConfig = {
@@ -88,5 +80,4 @@ export const startupConfig: IStartupConfig = {
   producerRetentionPolicy: (process.env.PRODUCER_RETENTION_POLICY as 'Limits' | 'Interest' | 'Workqueue') || 'Workqueue',
   ackPolicy: (process.env.ACK_POLICY as 'All' | 'Explicit') || 'Explicit',
   producerStorage: (process.env.PRODUCER_STORAGE as 'File' | 'Memory') || 'Memory',
-  natsDecodeResponse: validateEnvVar('NATS_DECODE_RESPONSE', 'boolean', true),
 };
