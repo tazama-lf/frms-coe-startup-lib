@@ -6,6 +6,7 @@ import { type ProcessorConfig } from '@tazama-lf/frms-coe-lib/lib/config/process
 import { startupConfig } from '../interfaces/iStartupConfig';
 import type { ILoggerService } from '../interfaces';
 import { validateEnvVar } from '@tazama-lf/frms-coe-lib/lib/config';
+import { getLogger } from '../utils';
 
 export class RabbitRelay implements IRelay {
   private readonly config = relayConfig;
@@ -16,11 +17,8 @@ export class RabbitRelay implements IRelay {
 
   async init(config: ProcessorConfig, loggerService?: ILoggerService): Promise<void> {
     this.queue = validateEnvVar('QUEUE', 'string');
-    if (loggerService) {
-      this.logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
-    } else {
-      this.logger = console;
-    }
+
+    this.logger = getLogger(startupConfig, loggerService);
 
     this.RabbitConn = await amqplib.connect(this.config.destinationUrl);
     this.RabbitChannel = await this.RabbitConn.createChannel();

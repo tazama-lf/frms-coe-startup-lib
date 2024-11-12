@@ -7,6 +7,7 @@ import axios from 'axios';
 import { type ILoggerService } from '../interfaces';
 import { validateEnvVar } from '@tazama-lf/frms-coe-lib/lib/config';
 import { startupConfig } from '../interfaces/iStartupConfig';
+import { getLogger } from '../utils';
 
 export class RestRelay implements IRelay {
   private readonly config = relayConfig;
@@ -16,11 +17,8 @@ export class RestRelay implements IRelay {
   private jsonPayload?: boolean;
 
   async init(loggerService?: ILoggerService): Promise<void> {
-    if (loggerService) {
-      this.logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
-    } else {
-      this.logger = console;
-    }
+    this.logger = getLogger(startupConfig, loggerService);
+
     const sockets = validateEnvVar('MAX_SOCKETS', 'number');
     this.jsonPayload = validateEnvVar('JSON_PAYLOAD', 'boolean');
     this.httpAgent = new http.Agent({ keepAlive: true, maxSockets: Number(sockets) });

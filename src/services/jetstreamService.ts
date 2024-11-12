@@ -16,6 +16,7 @@ import { type ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { type onMessageFunction } from '../types/onMessageFunction';
 import { type IStartupService } from '../interfaces/iStartupService';
+import { getLogger } from '../utils';
 
 export class JetstreamService implements IStartupService {
   server = {
@@ -98,11 +99,7 @@ export class JetstreamService implements IStartupService {
    */
   async initProducer(loggerService?: ILoggerService): Promise<boolean> {
     await this.validateEnvironment();
-    if (loggerService) {
-      this.logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
-    } else {
-      this.logger = console;
-    }
+    this.logger = getLogger(startupConfig, loggerService);
 
     try {
       // Connect to NATS Server

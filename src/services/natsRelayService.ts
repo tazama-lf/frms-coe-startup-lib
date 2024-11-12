@@ -3,6 +3,7 @@ import { relayConfig } from '../interfaces/iRelayConfig';
 import { type IRelay } from '../interfaces/iRelayService';
 import { type ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
+import { getLogger } from '../utils';
 
 export class NatsRelay implements IRelay {
   private readonly config = relayConfig;
@@ -10,11 +11,7 @@ export class NatsRelay implements IRelay {
   private logger?: ILoggerService | Console;
 
   async init(loggerService?: ILoggerService): Promise<void> {
-    if (loggerService) {
-      this.logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
-    } else {
-      this.logger = console;
-    }
+    this.logger = getLogger(startupConfig, loggerService);
 
     this.NatsConn_Producer = await connect({
       servers: this.config.destinationUrl,
