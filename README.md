@@ -150,6 +150,15 @@ If provided in the call to `init()`, this will be a subject to listen for messag
       - `warn(message: string): void`: Logs a warning message.
       - `error(message: string | Error): void`: Logs an error message.
 
+  - **Interface**: IRelayService
+    - **Methods**:
+      - `relay(data: Uint8Array): void'`: Relays a message
+
+  - **Interface**: IRelayConfig
+    - **Properties**:
+      - `destinationType: 'nats' | 'rabbitmq' | 'rest'`: The type of service to relay to.
+      - `destinationUrl: string`: Endpoint to relay messages to
+      - `producerStream: string`: Read from the startup config
 4. **Types**
 
   - **onMessageFunction**
@@ -243,6 +252,21 @@ The `frms-coe-startup-lib` library uses environment variables to configure the s
 - `FUNCTION_NAME`: The name of the function or service.
 - `PRODUCER_STREAM`: The name of the producer stream.
 - `CONSUMER_STREAM`: The name of the consumer stream.
+
+### Relay Environment Variables
+
+- `DESTINATION_URL`: Specifies the startup type (`nats`).
+- `DESTINATION_TYPE`: The node environment (`development`, `production`, etc.).
+
+#### NATS-Specific Relay Variables
+- `PRODUCER_STREAM`: The destination to relay messages to
+
+#### Rest-Specific Relay Variables
+- `JSON_PAYLOAD`: Convert the message to json before relaying
+- `MAX_SOCKETS`: Max http/https sockets limit
+
+#### RabbitMQ-Specific Relay Variables
+- `QUEUE`: Name of the queue for the RabbitMQ producer
 
 ### Configuration Files
 
