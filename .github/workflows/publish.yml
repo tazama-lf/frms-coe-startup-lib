@@ -15,7 +15,7 @@ jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+      GH_TOKEN: '${{ secrets.FRMS_COE_STARTUP }}'
     permissions:
       packages: write
       contents: read
@@ -30,11 +30,11 @@ jobs:
           node-version: 16.x
           registry-url: https://npm.pkg.github.com/
           # Defaults to the user or organization that owns the workflow file
-          scope: '@frmscoe'
+          scope: '@tazama-lf'
 
       - name: Set up NPM authentication
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.FRMS_COE_STARTUP }}" > ~/.npmrc
           cat .npmrc
 
       - name: Configure Git
@@ -44,7 +44,7 @@ jobs:
 
       - name: Version bumping
         env:
-         GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+         GH_TOKEN: '${{ secrets.FRMS_COE_STARTUP }}'
         run: |
           commit_message=$(git log -1 --pretty=%B)
           echo "Commit message: $commit_message"
@@ -64,7 +64,7 @@ jobs:
 
       - name: Publish package
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.FRMS_COE_STARTUP }}
         run: |
           npm publish
 
