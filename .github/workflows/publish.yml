@@ -37,11 +37,6 @@ jobs:
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
           cat .npmrc
 
-      - name: Configure Git
-        run: |
-          git config user.email ${{ secrets.GH_EMAIL }}
-          git config user.name ${{ secrets.GH_USERNAME }}
-
       - name: Version bumping
         env:
          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
@@ -58,17 +53,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
 
       - name: Build library
         run: npm run build
 
       - name: Publish package
         run: npm publish
-        env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN_LIB }}'
-          NODE_AUTH_TOKEN: '${{ secrets.GITHUB_TOKEN_LIB }}'
 
       - name: Capture Version
         id: capture_version
