@@ -65,9 +65,13 @@ jobs:
         run: npm run build
 
       - name: Publish package
-        run: npm publish
+        run: |
+          git config user.email ${{ secrets.GH_EMAIL }}
+          git config user.name ${{ secrets.GH_USERNAME }}
+          npm publish
         env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN_LIB }}'
+          GITHUB_TOKEN: '${{ secrets.GH_TOKEN_LIB }}'
+          NODE_AUTH_TOKEN: '${{ secrets.GH_TOKEN_LIB }}'
 
       - name: Capture Version
         id: capture_version
