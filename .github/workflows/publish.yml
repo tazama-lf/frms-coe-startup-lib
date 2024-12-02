@@ -67,8 +67,7 @@ jobs:
       - name: Publish package
         run: npm publish
         env:
-          GITHUB_TOKEN: '${{ secrets.GH_TOKEN_LIB }}'
-          NODE_AUTH_TOKEN: '${{ secrets.GH_TOKEN_LIB }}'
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
 
       - name: Capture Version
         id: capture_version
