@@ -63,6 +63,8 @@ jobs:
         run: npm run build
 
       - name: Publish package
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: npm publish
 
       - name: Capture Version
