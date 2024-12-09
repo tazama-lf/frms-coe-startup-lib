@@ -1,17 +1,18 @@
 {
-  "name": "@frmscoe/frms-coe-startup-lib",
-  "version": "2.2.0",
+  "name": "@tazama-lf/frms-coe-startup-lib",
+  "version": "2.3.0",
   "description": "FRMS Center of Excellence startup package library",
   "main": "lib/index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/frmscoe/frms-coe-startup-lib.git"
+    "url": "git+https://github.com/tazama-lf/frms-coe-startup-lib.git"
   },
   "files": [
     "lib"
   ],
   "publishConfig": {
-    "@frmscoe:registry": "https://npm.pkg.github.com/"
+    "@tazama-lf:registry": "https://npm.pkg.github.com/",
+    "access": "public"
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",
@@ -28,16 +29,19 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@frmscoe/frms-coe-lib": "^4.0.0",
-    "nats": "^2.14.0"
+    "@tazama-lf/frms-coe-lib": "^5.0.0",
+    "amqplib": "^0.10.4",
+    "axios": "^1.7.7",
+    "nats": "^2.28.2"
   },
   "keywords": [],
   "author": "",
   "license": "Apache-2.0",
   "devDependencies": {
     "@stylistic/eslint-plugin": "^2.1.0",
+    "@types/amqplib": "^0.10.5",
     "@types/jest": "^29.5.1",
-    "@types/node": "^20.14.2",
+    "@types/node": "^20.17.6",
     "@typescript-eslint/eslint-plugin": "^7.12.0",
     "@typescript-eslint/parser": "^7.12.0",
     "dotenv": "^16.1.2",

@@ -5,7 +5,8 @@ import { type ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { type onMessageFunction } from '../types/onMessageFunction';
 import { type IStartupService } from '..';
-import FRMSMessage from '@frmscoe/frms-coe-lib/lib/helpers/protobuf';
+import FRMSMessage from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
+import { getLogger } from '../utils';
 
 export class NatsService implements IStartupService {
   server = {
@@ -108,11 +109,8 @@ export class NatsService implements IStartupService {
 
   async initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean> {
     await this.validateEnvironment(parProducerStreamName);
-    if (loggerService) {
-      this.logger = startupConfig.env === 'dev' || startupConfig.env === 'test' ? console : loggerService;
-    } else {
-      this.logger = console;
-    }
+
+    this.logger = getLogger(startupConfig, loggerService);
 
     try {
       // Connect to NATS Server
