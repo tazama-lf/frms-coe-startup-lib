@@ -29,9 +29,11 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.16.0",
     "@tazama-lf/frms-coe-lib": "^5.0.0",
     "amqplib": "^0.10.4",
     "axios": "^1.7.7",
+    "google-auth-library": "^9.15.1",
     "nats": "^2.28.2"
   },
   "keywords": [],
