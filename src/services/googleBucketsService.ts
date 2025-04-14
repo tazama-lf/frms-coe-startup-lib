@@ -24,7 +24,7 @@ export class GoogleRelay implements IRelay {
       const messageString = JSON.stringify(messageObject);
 
       const bucket = this.client!.bucket(this.config.bucketName!);
-      const file = bucket.file(`reports/${randomUUID()}`);
+      const file = bucket.file(`reports/${randomUUID()}.json`);
 
       await file.save(messageString, {
         metadata: { contentType: 'application/json' },
