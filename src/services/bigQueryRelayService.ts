@@ -30,7 +30,6 @@ export class BigQueryRelay implements IRelay {
       const messageObject = FRMSMessage.toObject(decodedMessage);
 
       messageObject.report.timestamp = new Date().toISOString(); // This is required due to a bug in the proto file, discarding this date.
-      console.dir(messageObject);
 
       await this.bigquery!.dataset(this.config.datasetId!).table(this.config.tableId!).insert(messageObject);
 
