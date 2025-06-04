@@ -9,6 +9,8 @@ export interface IRelayConfig {
   producerStream: string;
   bucketName?: string;
   googleApplicationCredentials?: string;
+  tableId?: string;
+  datasetId?: string;
 }
 
 export const relayConfig: IRelayConfig = {
@@ -17,4 +19,6 @@ export const relayConfig: IRelayConfig = {
   producerStream: startupConfig.producerStreamName,
   bucketName: validateEnvVar('GOOGLE_BUCKET_NAME', 'string', true),
   googleApplicationCredentials: validateEnvVar('GOOGLE_APPLICATION_CREDENTIALS', 'string', true),
+  tableId: validateEnvVar('TABLE_ID', 'string', true),
+  datasetId: validateEnvVar('DATASET_ID', 'string', true),
 };
