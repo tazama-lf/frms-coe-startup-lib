@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { type IStartupConfig } from './interfaces';
-import { type IStartupService } from './interfaces/iStartupService';
+import type { IStartupConfig } from './interfaces';
+import type { IStartupService } from './interfaces/iStartupService';
 import { StartupFactory } from './services/startupFactory';
-import { type onMessageFunction } from './types/onMessageFunction';
+import type { onMessageFunction } from './types/onMessageFunction';
 
 export type { IStartupConfig, IStartupService, onMessageFunction };
 export { StartupFactory };

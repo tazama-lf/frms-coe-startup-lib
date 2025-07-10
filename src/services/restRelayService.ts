@@ -1,10 +1,10 @@
 import { relayConfig } from '../interfaces/iRelayConfig';
-import { type IRelay } from '../interfaces/iRelayService';
-import http from 'http';
-import https from 'https';
+import type { IRelay } from '../interfaces/iRelayService';
+import http from 'node:http';
+import https from 'node:https';
 import FRMSMessage from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
 import axios from 'axios';
-import { type ILoggerService } from '../interfaces';
+import type { ILoggerService } from '../interfaces';
 import { validateEnvVar } from '@tazama-lf/frms-coe-lib/lib/config';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { getLogger } from '../utils';

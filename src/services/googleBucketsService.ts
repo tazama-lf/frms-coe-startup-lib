@@ -1,9 +1,9 @@
 import { Storage } from '@google-cloud/storage';
 import FRMSMessage from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
-import { randomUUID } from 'crypto';
-import { type ILoggerService } from '../interfaces';
+import { randomUUID } from 'node:crypto';
+import type { ILoggerService } from '../interfaces';
 import { relayConfig } from '../interfaces/iRelayConfig';
-import { type IRelay } from '../interfaces/iRelayService';
+import type { IRelay } from '../interfaces/iRelayService';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { getLogger } from '../utils';
 
@@ -12,7 +12,7 @@ export class GoogleRelay implements IRelay {
   private client?: Storage;
   private readonly config = relayConfig;
 
-  async init(loggerService?: ILoggerService): Promise<void> {
+  init(loggerService?: ILoggerService): void {
     this.logger = getLogger(startupConfig, loggerService);
     this.client = new Storage();
   }

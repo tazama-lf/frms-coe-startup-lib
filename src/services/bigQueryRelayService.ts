@@ -1,8 +1,8 @@
 import { BigQuery } from '@google-cloud/bigquery';
 import FRMSMessage from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
-import { type ILoggerService } from '../interfaces';
+import type { ILoggerService } from '../interfaces';
 import { relayConfig } from '../interfaces/iRelayConfig';
-import { type IRelay } from '../interfaces/iRelayService';
+import type { IRelay } from '../interfaces/iRelayService';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { getLogger } from '../utils';
 
@@ -11,7 +11,7 @@ export class BigQueryRelay implements IRelay {
   private bigquery?: BigQuery;
   private readonly config = relayConfig;
 
-  async init(loggerService?: ILoggerService): Promise<void> {
+  init(loggerService?: ILoggerService): void {
     this.bigquery = new BigQuery();
     this.logger = getLogger(startupConfig, loggerService);
 

@@ -1,8 +1,8 @@
 import type { Channel, Connection } from 'amqplib';
 import amqplib from 'amqplib';
 import { relayConfig } from '../interfaces/iRelayConfig';
-import { type IRelay } from '../interfaces/iRelayService';
-import { type ProcessorConfig } from '@tazama-lf/frms-coe-lib/lib/config/processor.config';
+import type { IRelay } from '../interfaces/iRelayService';
+import type { ProcessorConfig } from '@tazama-lf/frms-coe-lib/lib/config/processor.config';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import type { ILoggerService } from '../interfaces';
 import { validateEnvVar } from '@tazama-lf/frms-coe-lib/lib/config';

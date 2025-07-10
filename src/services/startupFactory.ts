@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { type IStartupService, type onMessageFunction } from '..';
-import { type ILoggerService } from '../interfaces';
+import type { IStartupService, onMessageFunction } from '..';
+import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { JetstreamService } from './jetstreamService';
 import { NatsService } from './natsService';
@@ -19,42 +19,39 @@ export class StartupFactory implements IStartupService {
       case 'nats':
         this.startupService = new NatsService();
         break;
-      default:
-        throw new Error('STARTUP_TYPE not set to a correct value.');
     }
   }
 
-  /* eslint-disable @typescript-eslint/no-misused-promises */
   async init(
     onMessage: onMessageFunction,
-    loggerService?: ILoggerService | undefined,
+    loggerService?: ILoggerService,
     parConsumerStreamNames?: string[],
     parProducerStreamName?: string,
   ): Promise<boolean> {
-    process.on('uncaughtException', async (): Promise<void> => {
-      await this.startupService.init(onMessage, loggerService, parConsumerStreamNames, parProducerStreamName);
+    process.on('uncaughtException', (): void => {
+      this.startupService.init(onMessage, loggerService, parConsumerStreamNames, parProducerStreamName);
     });
 
-    process.on('unhandledRejection', async (): Promise<void> => {
-      await this.startupService.init(onMessage, loggerService, parConsumerStreamNames, parProducerStreamName);
+    process.on('unhandledRejection', (): void => {
+      this.startupService.init(onMessage, loggerService, parConsumerStreamNames, parProducerStreamName);
     });
 
     return await this.startupService.init(onMessage, loggerService, parConsumerStreamNames, parProducerStreamName);
   }
 
-  async initProducer(loggerService?: ILoggerService | undefined, parProducerStreamName?: string): Promise<boolean> {
-    process.on('uncaughtException', async (): Promise<void> => {
-      await this.startupService.initProducer(loggerService, parProducerStreamName);
+  async initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean> {
+    process.on('uncaughtException', (): void => {
+      this.startupService.initProducer(loggerService, parProducerStreamName);
     });
 
-    process.on('unhandledRejection', async (): Promise<void> => {
-      await this.startupService.initProducer(loggerService, parProducerStreamName);
+    process.on('unhandledRejection', (): void => {
+      this.startupService.initProducer(loggerService, parProducerStreamName);
     });
 
     return await this.startupService.initProducer(loggerService, parProducerStreamName);
   }
 
-  async handleResponse(response: object, subject?: string[] | undefined): Promise<void> {
+  async handleResponse(response: object, subject?: string[]): Promise<void> {
     await this.startupService.handleResponse(response, subject);
   }
 }
