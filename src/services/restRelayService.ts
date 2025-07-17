@@ -19,8 +19,8 @@ export class RestRelay implements IRelay {
   async init(loggerService?: ILoggerService): Promise<void> {
     this.logger = getLogger(startupConfig, loggerService);
 
-    const sockets = validateEnvVar('MAX_SOCKETS', 'number');
-    this.jsonPayload = validateEnvVar('JSON_PAYLOAD', 'boolean');
+    const sockets = Number(validateEnvVar('MAX_SOCKETS', 'number'));
+    this.jsonPayload = Boolean(validateEnvVar('JSON_PAYLOAD', 'boolean'));
     this.httpAgent = new http.Agent({ keepAlive: true, maxSockets: Number(sockets) });
     this.httpsAgent = new https.Agent({ keepAlive: true, maxSockets: Number(sockets) });
   }

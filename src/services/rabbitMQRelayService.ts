@@ -16,7 +16,7 @@ export class RabbitRelay implements IRelay {
   private queue?: string;
 
   async init(config: ProcessorConfig, loggerService?: ILoggerService): Promise<void> {
-    this.queue = validateEnvVar('QUEUE', 'string');
+    this.queue = validateEnvVar('QUEUE', 'string').toString();
 
     this.logger = getLogger(startupConfig, loggerService);
 
