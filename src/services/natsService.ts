@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { connect, type NatsConnection, type Subscription } from 'nats';
-import { type ILoggerService } from '../interfaces';
+import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
-import { type onMessageFunction } from '../types/onMessageFunction';
-import { type IStartupService } from '..';
+import type { onMessageFunction } from '../types/onMessageFunction';
+import type { IStartupService } from '..';
 import FRMSMessage from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
 import { getLogger } from '../utils';
 
@@ -34,7 +34,6 @@ export class NatsService implements IStartupService {
    *
    * @return {*}  {Promise<boolean>}
    */
-
   async init(
     onMessage: onMessageFunction,
     loggerService?: ILoggerService,
@@ -56,10 +55,10 @@ export class NatsService implements IStartupService {
       this.consumerStreamName = startupConfig.consumerStreamName.split(',');
       const subs: Subscription[] = [];
       for (const consumerStream of this.consumerStreamName) {
-        subs.push(this.NatsConn.subscribe(`${consumerStream}`, { queue: `${this.functionName}` }));
+        subs.push(this.NatsConn.subscribe(consumerStream, { queue: this.functionName }));
       }
 
-      (async () => {
+      (() => {
         for (const sub of subs) {
           this.subscribe(sub, onMessage);
         }
@@ -83,11 +82,14 @@ export class NatsService implements IStartupService {
 
   async subscribe(subscription: Subscription, onMessage: onMessageFunction): Promise<void> {
     for await (const message of subscription) {
-      console.debug(`${Date.now().toLocaleString()} sid:[${message?.sid}] subject:[${message.subject}]: ${message.data.length}`);
+      this.logger?.log(`${Date.now().toLocaleString()} sid:[${message.sid}] subject:[${message.subject}]: ${message.data.length}`);
       const messageDecoded = FRMSMessage.decode(message.data);
       const messageObject = FRMSMessage.toObject(messageDecoded);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      await onMessage(messageObject, this.handleResponse);
+
+      onMessage(messageObject, (msg) => {
+        void this.handleResponse(msg);
+      });
+      Promise.resolve();
     }
   }
 
@@ -106,15 +108,13 @@ export class NatsService implements IStartupService {
    *
    * @return {*}  {Promise<boolean>}
    */
-
   async initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean> {
-    await this.validateEnvironment(parProducerStreamName);
-
+    this.validateEnvironment(parProducerStreamName);
     this.logger = getLogger(startupConfig, loggerService);
 
     try {
       // Connect to NATS Server
-      this.logger.log(`Attempting connection to NATS, with config:\n${JSON.stringify(startupConfig, null, 4)}`);
+      this.logger.log(`Attempting connection to NATS, with config:\n${JSON.stringify(startupConfig)}`);
       this.NatsConn = await connect(this.server);
       this.logger.log(`Connected to ${this.NatsConn.getServer()}`);
       this.functionName = startupConfig.functionName.replace(/\./g, '_');
@@ -133,18 +133,18 @@ export class NatsService implements IStartupService {
         errorMessage = JSON.stringify(err);
         error = new Error(errorMessage);
       }
-      this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${errorMessage}`);
+      this.logger.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${errorMessage}`);
       throw error;
     }
 
-    this.NatsConn.closed().then(async () => {
+    this.NatsConn.closed().then(() => {
       this.logger!.log('Connection Lost to NATS Server.');
     });
 
     return true;
   }
 
-  async validateEnvironment(parProducerStreamName?: string): Promise<void> {
+  validateEnvironment(parProducerStreamName?: string): void {
     if (!startupConfig.producerStreamName && !parProducerStreamName) {
       throw new Error('No Producer Stream Name Provided in environmental Variable or on startup as an arguement');
     }
@@ -166,6 +166,7 @@ export class NatsService implements IStartupService {
    *
    * @return {*}  {Promise<void>}
    */
+  // eslint-disable-next-line @typescript-eslint/require-await -- Diffrent implementations of the handleresponse interface require a async signature.
   async handleResponse(response: object, subject?: string[]): Promise<void> {
     const message = FRMSMessage.create(response);
     const messageBuffer = FRMSMessage.encode(message).finish();

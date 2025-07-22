@@ -1,8 +1,8 @@
 import type { Channel, Connection } from 'amqplib';
 import amqplib from 'amqplib';
 import { relayConfig } from '../interfaces/iRelayConfig';
-import { type IRelay } from '../interfaces/iRelayService';
-import { type ProcessorConfig } from '@tazama-lf/frms-coe-lib/lib/config/processor.config';
+import type { IRelay } from '../interfaces/iRelayService';
+import type { ProcessorConfig } from '@tazama-lf/frms-coe-lib/lib/config/processor.config';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import type { ILoggerService } from '../interfaces';
 import { validateEnvVar } from '@tazama-lf/frms-coe-lib/lib/config';
@@ -16,7 +16,7 @@ export class RabbitRelay implements IRelay {
   private queue?: string;
 
   async init(config: ProcessorConfig, loggerService?: ILoggerService): Promise<void> {
-    this.queue = validateEnvVar('QUEUE', 'string');
+    this.queue = validateEnvVar('QUEUE', 'string').toString();
 
     this.logger = getLogger(startupConfig, loggerService);
 

@@ -14,11 +14,11 @@ export interface IRelayConfig {
 }
 
 export const relayConfig: IRelayConfig = {
-  destinationType: validateEnvVar('DESTINATION_TYPE', 'string'),
-  destinationUrl: validateEnvVar('DESTINATION_URL', 'string'),
+  destinationType: validateEnvVar('DESTINATION_TYPE', 'string').toString() as 'nats' | 'rabbitmq' | 'rest',
+  destinationUrl: validateEnvVar('DESTINATION_URL', 'string').toString(),
   producerStream: startupConfig.producerStreamName,
-  bucketName: validateEnvVar('GOOGLE_BUCKET_NAME', 'string', true),
-  googleApplicationCredentials: validateEnvVar('GOOGLE_APPLICATION_CREDENTIALS', 'string', true),
-  tableId: validateEnvVar('TABLE_ID', 'string', true),
-  datasetId: validateEnvVar('DATASET_ID', 'string', true),
+  bucketName: validateEnvVar('GOOGLE_BUCKET_NAME', 'string', true).toString(),
+  googleApplicationCredentials: validateEnvVar('GOOGLE_APPLICATION_CREDENTIALS', 'string', true).toString(),
+  tableId: validateEnvVar('TABLE_ID', 'string', true).toString(),
+  datasetId: validateEnvVar('DATASET_ID', 'string', true).toString(),
 };

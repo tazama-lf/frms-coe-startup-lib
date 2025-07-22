@@ -12,10 +12,11 @@ import {
   type NatsConnection,
   type StreamConfig,
 } from 'nats';
-import { type ILoggerService } from '../interfaces';
+import { setTimeout } from 'node:timers/promises';
+import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
-import { type onMessageFunction } from '../types/onMessageFunction';
-import { type IStartupService } from '../interfaces/iStartupService';
+import type { IStartupService } from '../interfaces/iStartupService';
+import type { onMessageFunction } from '../types/onMessageFunction';
 import { getLogger } from '../utils';
 
 export class JetstreamService implements IStartupService {
@@ -103,7 +104,7 @@ export class JetstreamService implements IStartupService {
 
     try {
       // Connect to NATS Server
-      this.logger.log(`Attempting connection to NATS, with config:\n${JSON.stringify(startupConfig, null, 4)}`);
+      this.logger.log(`Attempting connection to NATS, with config:\n${JSON.stringify(startupConfig)}`);
       this.NatsConn = await connect(this.server);
       this.logger.log(`Connected to ${this.NatsConn.getServer()}`);
       this.functionName = startupConfig.functionName.replace(/\./g, '_');
@@ -126,7 +127,7 @@ export class JetstreamService implements IStartupService {
         errorMessage = strErr;
         error = new Error(errorMessage);
       }
-      this.logger?.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${errorMessage}`);
+      this.logger.log(`Error communicating with NATS on: ${JSON.stringify(this.server)}, with error: ${errorMessage}`);
       throw error;
     }
 
@@ -139,7 +140,8 @@ export class JetstreamService implements IStartupService {
         connected = await this.connectNats();
         if (!connected) {
           this.logger!.warn('Unable to connect, retrying....');
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+          // await new Promise((resolve) => setTimeout(resolve, 5000));
+          await setTimeout(5000);
         } else {
           this.logger!.log('Reconnected to nats');
           break;
@@ -177,7 +179,7 @@ export class JetstreamService implements IStartupService {
         await this.consume(this.js, this.onMessage, this.consumerStreamName, this.functionName);
       }
     } catch (error) {
-      this.logger?.log(`Failed to connect to NATS.\n${JSON.stringify(error, null, 4)}`);
+      this.logger?.log(`Failed to connect to NATS.\n${JSON.stringify(error)}`);
       return false;
     }
     return true;
@@ -226,7 +228,7 @@ export class JetstreamService implements IStartupService {
           await jsm.streams.update(streamName, streamInfo.config);
         }
       },
-      async (reason) => {
+      async (reason: unknown) => {
         const typedRetentionPolicy = startupConfig.producerRetentionPolicy as keyof typeof RetentionPolicy;
         const typedStorgage = startupConfig.producerStorage as keyof typeof StorageType;
 
@@ -276,11 +278,12 @@ export class JetstreamService implements IStartupService {
     const sub = await consumer.consume({ max_messages: 1 });
 
     for await (const message of sub) {
-      console.debug(`${Date.now().toLocaleString()} S:[${message?.seq}] Q:[${message.subject}]: ${message.data.length}`);
+      this.logger?.log(`${Date.now().toLocaleString()} S:[${message.seq}] Q:[${message.subject}]: ${message.data.length}`);
       const request = message.json<string>();
       try {
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        await onMessage(request, this.handleResponse);
+        onMessage(request, (msg) => {
+          void this.handleResponse(msg);
+        });
       } catch (error) {
         this.logger?.error(`Error while handling message: \r\n${error as string}`);
       }
