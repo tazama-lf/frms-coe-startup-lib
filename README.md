@@ -268,6 +268,10 @@ The `frms-coe-startup-lib` library uses environment variables to configure the s
 #### RabbitMQ-Specific Relay Variables
 - `QUEUE`: Name of the queue for the RabbitMQ producer
 
+#### Google Cloud Bucket-Specific Relay Variables
+- `GOOGLE_BUCKET_NAME`: Name of the google bucket you are planning to save to.
+- `GOOGLE_APPLICATION_CREDENTIALS`: Path to the service account key file required to connect to the bucket.
+
 ### Configuration Files
 
 The library supports configuration through [`.env`](.env.template.nats) files or other configuration file formats. These files can be used to set environment variables and other settings.

@@ -1,10 +1,10 @@
 import { relayConfig } from '../interfaces/iRelayConfig';
-import { type IRelay } from '../interfaces/iRelayService';
-import http from 'http';
-import https from 'https';
+import type { IRelay } from '../interfaces/iRelayService';
+import http from 'node:http';
+import https from 'node:https';
 import FRMSMessage from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
 import axios from 'axios';
-import { type ILoggerService } from '../interfaces';
+import type { ILoggerService } from '../interfaces';
 import { validateEnvVar } from '@tazama-lf/frms-coe-lib/lib/config';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { getLogger } from '../utils';
@@ -19,8 +19,8 @@ export class RestRelay implements IRelay {
   async init(loggerService?: ILoggerService): Promise<void> {
     this.logger = getLogger(startupConfig, loggerService);
 
-    const sockets = validateEnvVar('MAX_SOCKETS', 'number');
-    this.jsonPayload = validateEnvVar('JSON_PAYLOAD', 'boolean');
+    const sockets = Number(validateEnvVar('MAX_SOCKETS', 'number'));
+    this.jsonPayload = Boolean(validateEnvVar('JSON_PAYLOAD', 'boolean'));
     this.httpAgent = new http.Agent({ keepAlive: true, maxSockets: Number(sockets) });
     this.httpsAgent = new https.Agent({ keepAlive: true, maxSockets: Number(sockets) });
   }

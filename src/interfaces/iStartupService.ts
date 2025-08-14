@@ -2,8 +2,8 @@
 
 // init, initProducer, handleResponse
 
-import { type ILoggerService } from '.';
-import { type onMessageFunction } from '../types/onMessageFunction';
+import type { ILoggerService } from '.';
+import type { onMessageFunction } from '../types/onMessageFunction';
 
 export interface IStartupService {
   init: (

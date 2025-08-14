@@ -1,7 +1,7 @@
 import { connect, type NatsConnection } from 'nats';
 import { relayConfig } from '../interfaces/iRelayConfig';
-import { type IRelay } from '../interfaces/iRelayService';
-import { type ILoggerService } from '../interfaces';
+import type { IRelay } from '../interfaces/iRelayService';
+import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import { getLogger } from '../utils';
 

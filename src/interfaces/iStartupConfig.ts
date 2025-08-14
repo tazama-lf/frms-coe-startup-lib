@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { config as dotenv } from 'dotenv';
-import path from 'path';
+import path from 'node:path';
 import { validateEnvVar } from '@tazama-lf/frms-coe-lib/lib/config';
 
 // Load .env file into process.env if it exists. This is convenient for running locally.
@@ -70,13 +70,13 @@ export interface IStartupConfig {
 }
 
 export const startupConfig: IStartupConfig = {
-  startupType: validateEnvVar<'nats' | 'jetstream'>('STARTUP_TYPE', 'string'),
-  env: validateEnvVar<string>('NODE_ENV', 'string'),
-  serverUrl: validateEnvVar<string>('SERVER_URL', 'string'),
-  functionName: validateEnvVar<string>('FUNCTION_NAME', 'string'),
-  producerStreamName: validateEnvVar('PRODUCER_STREAM', 'string', true),
-  consumerStreamName: validateEnvVar('CONSUMER_STREAM', 'string', true),
-  streamSubject: validateEnvVar<string>('STREAM_SUBJECT', 'string', true),
+  startupType: validateEnvVar('STARTUP_TYPE', 'string').toString() as 'nats' | 'jetstream',
+  env: validateEnvVar('NODE_ENV', 'string').toString(),
+  serverUrl: validateEnvVar('SERVER_URL', 'string').toString(),
+  functionName: validateEnvVar('FUNCTION_NAME', 'string').toString(),
+  producerStreamName: validateEnvVar('PRODUCER_STREAM', 'string', true).toString(),
+  consumerStreamName: validateEnvVar('CONSUMER_STREAM', 'string', true).toString(),
+  streamSubject: validateEnvVar('STREAM_SUBJECT', 'string', true).toString(),
   producerRetentionPolicy: (process.env.PRODUCER_RETENTION_POLICY as 'Limits' | 'Interest' | 'Workqueue') || 'Workqueue',
   ackPolicy: (process.env.ACK_POLICY as 'All' | 'Explicit') || 'Explicit',
   producerStorage: (process.env.PRODUCER_STORAGE as 'File' | 'Memory') || 'Memory',
