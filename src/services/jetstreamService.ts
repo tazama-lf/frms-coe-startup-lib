@@ -257,12 +257,12 @@ export class JetstreamService implements IStartupService {
     const publishes = [];
     const res = JSON.stringify(response);
 
-    if (this.producerStreamName) {
+    if (this.js && this.producerStreamName) {
       if (!subject) {
-        publishes.push(this.js?.publish(this.producerStreamName, sc.encode(res)));
+        publishes.push(this.js.publish(this.producerStreamName, sc.encode(res)));
       } else {
         for (const sub of subject) {
-          publishes.push(this.js?.publish(sub, sc.encode(res)));
+          publishes.push(this.js.publish(sub, sc.encode(res)));
         }
       }
       await Promise.all(publishes);
