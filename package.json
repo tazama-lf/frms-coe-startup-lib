@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.1",
-    "@google-cloud/storage": "^7.16.0",
+    "@google-cloud/storage": "^7.17.3",
     "@tazama-lf/frms-coe-lib": "6.0.0",
     "amqplib": "0.10.6",
     "axios": "^1.12.2",
