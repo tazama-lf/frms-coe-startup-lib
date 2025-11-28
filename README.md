@@ -8,6 +8,7 @@
 - [Modules and Classes](#modules-and-classes)
 - [Sequence Diagram](#sequence-diagram)
 - [Configuration](#configuration)
+- [Authentication and User Management](#authentication-and-user-management)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -286,6 +287,27 @@ Logging can be configured using environment variables or configuration files. Op
 ### Stream and Subject Configuration
 
 The library can be configured to interact with specific streams and subjects in the message broker. These are specified using the `PRODUCER_STREAM`, `CONSUMER_STREAM`, and `STREAM_SUBJECT` environment variables.
+
+## Authentication and User Management
+
+The `frms-coe-startup-lib` library focuses on message transmission and service initialization in the Tazama ecosystem. **Authentication and user management are handled by separate repositories**:
+
+### Authentication Service
+- **Repository**: [auth-service](https://github.com/tazama-lf/auth-service)
+- **Purpose**: Handles credential exchange for tokens in Tazama
+- **Functionality**: Provides the API endpoint for login requests, exchanges credentials for Tazama-formatted tokens
+
+### Authentication Library
+- **Repository**: [auth-lib](https://github.com/tazama-lf/auth-lib)
+- **Purpose**: Core authentication library used by the auth-service
+- **Functionality**: Manages token generation, validation, and exchange logic
+
+### Authentication Provider
+- **Repository**: [auth-lib-provider-keycloak](https://github.com/tazama-lf/auth-lib-provider-keycloak)
+- **Purpose**: Keycloak integration provider for auth-lib
+- **Functionality**: Implements the auth-lib provider interface for Keycloak-based authentication
+
+For user authentication and management needs in your Tazama microservices, please refer to the [auth-service](https://github.com/tazama-lf/auth-service) documentation.
 
 ## Contributing
 
