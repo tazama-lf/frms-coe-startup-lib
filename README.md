@@ -8,6 +8,7 @@
 - [Modules and Classes](#modules-and-classes)
 - [Sequence Diagram](#sequence-diagram)
 - [Configuration](#configuration)
+- [Tazama Services Reference](#tazama-services-reference)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -286,6 +287,14 @@ Logging can be configured using environment variables or configuration files. Op
 ### Stream and Subject Configuration
 
 The library can be configured to interact with specific streams and subjects in the message broker. These are specified using the `PRODUCER_STREAM`, `CONSUMER_STREAM`, and `STREAM_SUBJECT` environment variables.
+
+## Tazama Services Reference
+
+For detailed information about the various services in the Tazama ecosystem, including authentication services, ports, and responsibilities, see the [Tazama Services Reference](Documentation/TAZAMA_SERVICES.md).
+
+**Quick Reference:**
+- **Authentication & User Management**: [`auth-service`](https://github.com/tazama-lf/auth-service) - Runs on port **3020**
+- **Transaction Processing**: See the full [service documentation](Documentation/TAZAMA_SERVICES.md) for details on TMS, Event Director, Rule Processors, and more.
 
 ## Contributing
 
