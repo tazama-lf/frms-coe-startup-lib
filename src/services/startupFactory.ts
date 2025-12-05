@@ -3,11 +3,13 @@
 import type { IStartupService, onMessageFunction } from '..';
 import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
+import type { tHeader } from '../interfaces/iStartupService';
 import { JetstreamService } from './jetstreamService';
 import { NatsService } from './natsService';
 
 export class StartupFactory implements IStartupService {
   startupService: IStartupService;
+  commandChannel: JetstreamService = new JetstreamService();
   /**
    *  Initializes a new startup service which would either be a Jetstream or Nats server, depending on the configurd SERVER_TYPE env variable ('nats' | 'jestream')
    */
@@ -55,16 +57,24 @@ export class StartupFactory implements IStartupService {
     await this.startupService.handleResponse(response, subject);
   }
 
-  // await commandChannel.handleResponse();
-
+  // Command Channel Methods
   async initCommandChannel(onMessage: onMessageFunction, consumerStream: string, loggerService?: ILoggerService): Promise<boolean> {
     try {
-      const commandChannel = new JetstreamService();
-      await commandChannel.init(onMessage, loggerService, [consumerStream]);
+      return await this.commandChannel.init(onMessage, loggerService, [consumerStream]);
     } catch (error) {
       throw new Error(`Error when starting up Command Channel ${JSON.stringify(error)}`);
     }
+  }
 
-    return true;
+  async initCommandChannelProducer(loggerService?: ILoggerService): Promise<boolean> {
+    try {
+      return await this.commandChannel.initProducer(loggerService);
+    } catch (error) {
+      throw new Error(`Error when starting up Command Channel Producer ${JSON.stringify(error)}`);
+    }
+  }
+
+  async handleResponseCommandChannel(response: object, subject?: string[], headers?: tHeader[]): Promise<void> {
+    await this.commandChannel.handleResponse(response, subject, headers);
   }
 }

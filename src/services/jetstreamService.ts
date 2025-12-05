@@ -6,6 +6,7 @@ import {
   RetentionPolicy,
   StorageType,
   connect,
+  headers as natsHeaders,
   type ConsumerConfig,
   type JetStreamClient,
   type JetStreamManager,
@@ -15,7 +16,7 @@ import {
 import { setTimeout } from 'node:timers/promises';
 import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
-import type { IStartupService } from '../interfaces/iStartupService';
+import type { tHeader, IStartupService } from '../interfaces/iStartupService';
 import type { onMessageFunction } from '../types/onMessageFunction';
 import { getLogger } from '../utils';
 
@@ -252,18 +253,25 @@ export class JetstreamService implements IStartupService {
    *
    * @return {*}  {Promise<void>}
    */
-  async handleResponse(response: object, subject?: string[]): Promise<void> {
+  async handleResponse(response: object, subject?: string[], headers?: tHeader[]): Promise<void> {
     const publishes = [];
+
+    const h = natsHeaders();
+    if (headers) {
+      for (const header of headers) {
+        h.set(header.key, header.value);
+      }
+    }
 
     const message = FRMSMessage.create(response);
     const messageBuffer = FRMSMessage.encode(message).finish();
 
     if (this.js && this.producerStreamName) {
       if (!subject) {
-        publishes.push(this.js.publish(this.producerStreamName, messageBuffer));
+        publishes.push(this.js.publish(this.producerStreamName, messageBuffer, { headers: h }));
       } else {
         for (const sub of subject) {
-          publishes.push(this.js.publish(sub, messageBuffer));
+          publishes.push(this.js.publish(sub, messageBuffer, { headers: h }));
         }
       }
       await Promise.all(publishes);
@@ -290,9 +298,5 @@ export class JetstreamService implements IStartupService {
       }
       message.ack();
     }
-  }
-
-  async initCommandChannel(onMessage: onMessageFunction, consumerStream: string, loggerService?: ILoggerService): Promise<boolean> {
-    return await Promise.resolve(true);
   }
 }

@@ -181,8 +181,4 @@ export class NatsService implements IStartupService {
       }
     }
   }
-
-  async initCommandChannel(onMessage: onMessageFunction, consumerStream: string, loggerService?: ILoggerService): Promise<boolean> {
-    return await Promise.resolve(true);
-  }
 }

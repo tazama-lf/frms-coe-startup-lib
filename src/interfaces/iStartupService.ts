@@ -4,7 +4,10 @@
 
 import type { ILoggerService } from '.';
 import type { onMessageFunction } from '../types/onMessageFunction';
-
+export interface tHeader {
+  key: string;
+  value: string;
+}
 export interface IStartupService {
   init: (
     onMessage: onMessageFunction,
@@ -13,6 +16,8 @@ export interface IStartupService {
     parProducerStreamName?: string,
   ) => Promise<boolean>;
   initProducer: (loggerService?: ILoggerService, parProducerStreamName?: string) => Promise<boolean>;
-  handleResponse: (response: object, subject?: string[]) => Promise<void>;
-  initCommandChannel: (response: onMessageFunction, subject: string, loggerService?: ILoggerService) => Promise<boolean>;
+  handleResponse: (response: object, subject?: string[], headers?: tHeader[]) => Promise<void>;
+  initCommandChannel?: (response: onMessageFunction, subject: string, loggerService?: ILoggerService) => Promise<boolean>;
+  handleResponseCommandChannel?: (response: object, subject?: string[], headers?: tHeader[]) => Promise<void>;
+  initCommandChannelProducer?: (loggerService?: ILoggerService) => Promise<boolean>;
 }
