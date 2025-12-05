@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import FRMSMessage from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
 import {
   AckPolicy,
   RetentionPolicy,
   StorageType,
-  StringCodec,
   connect,
   type ConsumerConfig,
   type JetStreamClient,
@@ -49,7 +49,7 @@ export class JetstreamService implements IStartupService {
    * @return {*}  {Promise<boolean>}
    */
 
-  async init(onMessage: onMessageFunction, loggerService?: ILoggerService): Promise<boolean> {
+  async init(onMessage: onMessageFunction, loggerService?: ILoggerService, parConsumerStreamNames?: string[]): Promise<boolean> {
     try {
       // Validate additional Environmental Variables.
       if (!startupConfig.consumerStreamName) {
@@ -252,17 +252,18 @@ export class JetstreamService implements IStartupService {
    *
    * @return {*}  {Promise<void>}
    */
-  async handleResponse(response: unknown, subject?: string[]): Promise<void> {
-    const sc = StringCodec();
+  async handleResponse(response: object, subject?: string[]): Promise<void> {
     const publishes = [];
-    const res = JSON.stringify(response);
+
+    const message = FRMSMessage.create(response);
+    const messageBuffer = FRMSMessage.encode(message).finish();
 
     if (this.js && this.producerStreamName) {
       if (!subject) {
-        publishes.push(this.js.publish(this.producerStreamName, sc.encode(res)));
+        publishes.push(this.js.publish(this.producerStreamName, messageBuffer));
       } else {
         for (const sub of subject) {
-          publishes.push(this.js.publish(sub, sc.encode(res)));
+          publishes.push(this.js.publish(sub, messageBuffer));
         }
       }
       await Promise.all(publishes);
@@ -289,5 +290,9 @@ export class JetstreamService implements IStartupService {
       }
       message.ack();
     }
+  }
+
+  async initCommandChannel(onMessage: onMessageFunction, consumerStream: string, loggerService?: ILoggerService): Promise<boolean> {
+    return await Promise.resolve(true);
   }
 }

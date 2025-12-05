@@ -54,4 +54,17 @@ export class StartupFactory implements IStartupService {
   async handleResponse(response: object, subject?: string[]): Promise<void> {
     await this.startupService.handleResponse(response, subject);
   }
+
+  // await commandChannel.handleResponse();
+
+  async initCommandChannel(onMessage: onMessageFunction, consumerStream: string, loggerService?: ILoggerService): Promise<boolean> {
+    try {
+      const commandChannel = new JetstreamService();
+      await commandChannel.init(onMessage, loggerService, [consumerStream]);
+    } catch (error) {
+      throw new Error(`Error when starting up Command Channel ${JSON.stringify(error)}`);
+    }
+
+    return true;
+  }
 }

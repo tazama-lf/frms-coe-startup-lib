@@ -14,4 +14,5 @@ export interface IStartupService {
   ) => Promise<boolean>;
   initProducer: (loggerService?: ILoggerService, parProducerStreamName?: string) => Promise<boolean>;
   handleResponse: (response: object, subject?: string[]) => Promise<void>;
+  initCommandChannel: (response: onMessageFunction, subject: string, loggerService?: ILoggerService) => Promise<boolean>;
 }
