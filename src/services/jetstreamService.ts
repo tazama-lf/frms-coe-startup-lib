@@ -50,12 +50,19 @@ export class JetstreamService implements IStartupService {
    * @return {*}  {Promise<boolean>}
    */
 
-  async init(onMessage: onMessageFunction, loggerService?: ILoggerService, parConsumerStreamNames?: string[]): Promise<boolean> {
+  async init(
+    onMessage: onMessageFunction,
+    loggerService?: ILoggerService,
+    parConsumerStreamNames?: string[],
+    parProducerStreamName?: string,
+  ): Promise<boolean> {
     try {
       // Validate additional Environmental Variables.
-      if (!startupConfig.consumerStreamName) {
+      if (!startupConfig.consumerStreamName && parConsumerStreamNames?.length === 0) {
         throw new Error('No Consumer Stream Name Provided in environmental Variable');
       }
+      this.producerStreamName = parProducerStreamName ?? startupConfig.producerStreamName;
+      this.consumerStreamName = parConsumerStreamNames ? parConsumerStreamNames.join(',') : startupConfig.consumerStreamName;
 
       this.onMessage = onMessage;
       await this.initProducer(loggerService);
@@ -63,7 +70,6 @@ export class JetstreamService implements IStartupService {
       if (!this.NatsConn || !this.jsm || !this.js || !this.logger) return await Promise.resolve(false);
 
       // Add consumer streams
-      this.consumerStreamName = startupConfig.consumerStreamName; // "RuleRequest";
       await this.createConsumer(this.functionName, this.jsm, this.consumerStreamName);
 
       if (this.consumerStreamName) await this.consume(this.js, onMessage, this.consumerStreamName, this.functionName);
@@ -99,13 +105,15 @@ export class JetstreamService implements IStartupService {
    *
    * @return {*}  {Promise<boolean>}
    */
-  async initProducer(loggerService?: ILoggerService): Promise<boolean> {
+  async initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean> {
     await this.validateEnvironment();
     this.logger = getLogger(startupConfig, loggerService);
 
     try {
       // Connect to NATS Server
-      this.logger.log(`Attempting connection to NATS, with config:\n${JSON.stringify(startupConfig)}`);
+      this.logger.log(`Attempting connection to NATS, with config:\n${JSON.stringify(this.server)}`);
+      this.logger.log(`Producer Stream: ${this.producerStreamName}`);
+      this.logger.log(`Consumer Stream: ${this.consumerStreamName}`);
       this.NatsConn = await connect(this.server);
       this.logger.log(`Connected to ${this.NatsConn.getServer()}`);
       this.functionName = startupConfig.functionName.replace(/\./g, '_');
@@ -115,7 +123,8 @@ export class JetstreamService implements IStartupService {
       this.js = this.NatsConn.jetstream();
 
       // Add producer streams
-      this.producerStreamName = startupConfig.producerStreamName; // `RuleResponse${functionName}`;
+      this.producerStreamName = startupConfig.producerStreamName;
+      if (parProducerStreamName) this.producerStreamName = parProducerStreamName;
       await this.createStream(this.jsm, this.producerStreamName);
     } catch (err) {
       let error: Error;

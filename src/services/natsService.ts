@@ -14,7 +14,7 @@ export class NatsService implements IStartupService {
   };
 
   producerStreamName = '';
-  consumerStreamName: string[] | undefined;
+  consumerStreamName = '';
   functionName = '';
   NatsConn?: NatsConnection;
   logger?: ILoggerService | Console;
@@ -43,18 +43,18 @@ export class NatsService implements IStartupService {
     try {
       // Validate additional Environmental Variables.
       if (!startupConfig.consumerStreamName && !parConsumerStreamNames?.length) {
-        throw new Error('No Consumer Stream Name Provided in environmental Variable or on startup as an arguement');
+        throw new Error('No Consumer Stream Name Provided in environmental Variable or on startup as an argument');
       }
-      if (parProducerStreamName) startupConfig.producerStreamName = parProducerStreamName;
-      if (parConsumerStreamNames) startupConfig.consumerStreamName = String(parConsumerStreamNames);
+      this.producerStreamName = parProducerStreamName ?? startupConfig.producerStreamName;
+      this.consumerStreamName = parConsumerStreamNames ? parConsumerStreamNames.join(',') : startupConfig.consumerStreamName;
 
       await this.initProducer(loggerService, parProducerStreamName);
       if (!this.NatsConn || !this.logger) return await Promise.resolve(false);
 
       // Add consumer streams
-      this.consumerStreamName = startupConfig.consumerStreamName.split(',');
+
       const subs: Subscription[] = [];
-      for (const consumerStream of this.consumerStreamName) {
+      for (const consumerStream of this.consumerStreamName.split(',')) {
         subs.push(this.NatsConn.subscribe(consumerStream, { queue: this.functionName }));
       }
 
@@ -114,7 +114,9 @@ export class NatsService implements IStartupService {
 
     try {
       // Connect to NATS Server
-      this.logger.log(`Attempting connection to NATS, with config:\n${JSON.stringify(startupConfig)}`);
+      this.logger.log(`Attempting connection to NATS, with config:\n${JSON.stringify(this.server)}`);
+      this.logger.log(`Producer Stream: ${this.producerStreamName}`);
+      this.logger.log(`Consumer Stream: ${this.consumerStreamName}`);
       this.NatsConn = await connect(this.server);
       this.logger.log(`Connected to ${this.NatsConn.getServer()}`);
       this.functionName = startupConfig.functionName.replace(/\./g, '_');
