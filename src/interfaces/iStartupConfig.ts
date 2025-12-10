@@ -67,6 +67,29 @@ export interface IStartupConfig {
    * @memberof IStartupConfig
    */
   streamSubject: string;
+
+  /**
+   *commandChannelProducerStreamName: <string>process.env.COMMAND_CHANNEL_PRODUCER_STREAM
+   *
+   * @type {string}
+   * @memberof IStartupConfig
+   */
+  commandChannelProducerStreamName: string;
+  /**
+   *commandChannelConsumerStreamName: <string>process.env.COMMAND_CHANNEL_CONSUMER_STREAM
+   *
+   * @type {string}
+   * @memberof IStartupConfig
+   */
+  commandChannelConsumerStreamName: string;
+
+  /**
+   *commandChannelStreamSubject: <string>process.env.COMMAND_CHANNEL_STREAM_SUBJECT
+   *
+   * @type {string}
+   * @memberof IStartupConfig
+   */
+  commandChannelStreamSubject: string;
 }
 
 export const startupConfig: IStartupConfig = {
@@ -77,7 +100,11 @@ export const startupConfig: IStartupConfig = {
   producerStreamName: validateEnvVar('PRODUCER_STREAM', 'string', true).toString(),
   consumerStreamName: validateEnvVar('CONSUMER_STREAM', 'string', true).toString(),
   streamSubject: validateEnvVar('STREAM_SUBJECT', 'string', true).toString(),
-  producerRetentionPolicy: (process.env.PRODUCER_RETENTION_POLICY as 'Limits' | 'Interest' | 'Workqueue') || 'Workqueue',
+  producerRetentionPolicy: (process.env.PRODUCER_RETENTION_POLICY as 'Limits' | 'Interest' | 'Workqueue') || 'Interest',
   ackPolicy: (process.env.ACK_POLICY as 'All' | 'Explicit') || 'Explicit',
   producerStorage: (process.env.PRODUCER_STORAGE as 'File' | 'Memory') || 'Memory',
+  // Command Channel Configurations
+  commandChannelProducerStreamName: validateEnvVar('COMMAND_CHANNEL_PRODUCER_STREAM', 'string', true).toString(),
+  commandChannelConsumerStreamName: validateEnvVar('COMMAND_CHANNEL_CONSUMER_STREAM', 'string', true).toString(),
+  commandChannelStreamSubject: validateEnvVar('COMMAND_CHANNEL_STREAM_SUBJECT', 'string', true).toString(),
 };

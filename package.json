@@ -29,12 +29,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@google-cloud/bigquery": "^8.1.1",
-    "@google-cloud/storage": "^7.16.0",
     "@tazama-lf/frms-coe-lib": "6.0.0",
-    "amqplib": "0.10.6",
-    "axios": "^1.12.2",
-    "google-auth-library": "^10.2.0",
     "nats": "^2.29.3"
   },
   "keywords": [],
@@ -43,7 +38,6 @@
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.5.0",
     "@stylistic/eslint-plugin": "^5.4.0",
-    "@types/amqplib": "0.10.6",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.1.0",
     "@typescript-eslint/eslint-plugin": "^8.45.0",

@@ -19,6 +19,7 @@ import { startupConfig } from '../interfaces/iStartupConfig';
 import type { tHeader, IStartupService } from '../interfaces/iStartupService';
 import type { onMessageFunction } from '../types/onMessageFunction';
 import { getLogger } from '../utils';
+import { randomUUID } from 'node:crypto';
 
 export class JetstreamService implements IStartupService {
   server = {
@@ -58,14 +59,14 @@ export class JetstreamService implements IStartupService {
   ): Promise<boolean> {
     try {
       // Validate additional Environmental Variables.
-      if (!startupConfig.consumerStreamName && parConsumerStreamNames?.length === 0) {
+      if (!startupConfig.consumerStreamName && !parConsumerStreamNames?.length) {
         throw new Error('No Consumer Stream Name Provided in environmental Variable');
       }
       this.producerStreamName = parProducerStreamName ?? startupConfig.producerStreamName;
       this.consumerStreamName = parConsumerStreamNames ? parConsumerStreamNames.join(',') : startupConfig.consumerStreamName;
 
       this.onMessage = onMessage;
-      await this.initProducer(loggerService);
+      await this.initProducer(loggerService, this.producerStreamName);
       // Guard statement to ensure initProducer was successful
       if (!this.NatsConn || !this.jsm || !this.js || !this.logger) return await Promise.resolve(false);
 
@@ -123,8 +124,7 @@ export class JetstreamService implements IStartupService {
       this.js = this.NatsConn.jetstream();
 
       // Add producer streams
-      this.producerStreamName = startupConfig.producerStreamName;
-      if (parProducerStreamName) this.producerStreamName = parProducerStreamName;
+      this.producerStreamName = parProducerStreamName ?? startupConfig.producerStreamName;
       await this.createStream(this.jsm, this.producerStreamName);
     } catch (err) {
       let error: Error;
@@ -150,7 +150,6 @@ export class JetstreamService implements IStartupService {
         connected = await this.connectNats();
         if (!connected) {
           this.logger!.warn('Unable to connect, retrying....');
-          // await new Promise((resolve) => setTimeout(resolve, 5000));
           await setTimeout(5000);
         } else {
           this.logger!.log('Reconnected to nats');
@@ -158,12 +157,11 @@ export class JetstreamService implements IStartupService {
         }
       }
     });
-
     return await Promise.resolve(true);
   }
 
-  async validateEnvironment(): Promise<void> {
-    if (!startupConfig.producerStreamName) {
+  async validateEnvironment(parProducerStreamName?: string): Promise<void> {
+    if (!startupConfig.producerStreamName && !parProducerStreamName) {
       throw new Error('No Producer Stream Name Provided in environmental Variable');
     }
 
@@ -200,14 +198,13 @@ export class JetstreamService implements IStartupService {
 
     for (const stream of consumerStreams) {
       await this.createStream(jsm, stream, startupConfig.streamSubject ? startupConfig.streamSubject : undefined);
-      // Require Nats Version 2.10 to be released. Slated for a few months.
-      // const streamSubjects = startupConfig.streamSubject ? startupConfig.streamSubject.split(',') : [startupConfig.consumerStreamName];
-
+      const streamSubjects = startupConfig.streamSubject ? startupConfig.streamSubject.split(',') : [startupConfig.consumerStreamName];
+      this.functionName = `${functionName}-${randomUUID()}`;
       const typedAckPolicy = startupConfig.ackPolicy;
       const consumerCfg: Partial<ConsumerConfig> = {
         ack_policy: AckPolicy[typedAckPolicy],
-        durable_name: functionName,
-        // filter_subjects: streamSubjects, Require Nats Version 2.10 to be released. Slated for a few months.
+        durable_name: this.functionName,
+        filter_subjects: streamSubjects,
       };
       await jsm.consumers.add(stream, consumerCfg);
       this.logger?.log('Connected Consumer to Consumer Stream');
@@ -216,42 +213,65 @@ export class JetstreamService implements IStartupService {
   }
 
   async createStream(jsm: JetStreamManager, streamName: string, subjectName?: string): Promise<void> {
-    await jsm.streams.find(streamName).then(
-      async (stream) => {
-        this.logger?.log(`Stream: ${streamName} already exists.`);
+    // Parse subjects from the optional subjectName argument
+    const newSubjects = subjectName
+      ? subjectName
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0)
+      : [];
 
-        if (subjectName) {
-          const subjectList = subjectName.split(',');
-          this.logger?.log(`Adding subject(s): ${subjectName} to stream: ${streamName}`);
-          const streamInfo = await jsm.streams.info(stream);
+    try {
+      // Check if the stream already exists by NAME
+      const streamInfo = await jsm.streams.info(streamName);
+      this.logger?.log(`Stream: ${streamName} already exists.`);
 
-          for (const subject of subjectList) {
-            if (streamInfo.config.subjects.includes(subject)) {
-              this.logger?.log(`Subject: ${subject} Already present`);
-              continue;
-            }
+      if (!newSubjects.length) {
+        // nothing to add
+        return;
+      }
 
-            if (streamInfo.config.subjects) streamInfo.config.subjects.push(subject);
-            else streamInfo.config.subjects = [subject];
-            this.logger?.log(`Subject: ${subject} Added.`);
-          }
-          await jsm.streams.update(streamName, streamInfo.config);
-        }
-      },
-      async (reason: unknown) => {
-        const typedRetentionPolicy = startupConfig.producerRetentionPolicy as keyof typeof RetentionPolicy;
-        const typedStorgage = startupConfig.producerStorage as keyof typeof StorageType;
+      const currentSubjects = streamInfo.config.subjects ?? [];
+      const merged = [...new Set([...currentSubjects, ...newSubjects])];
 
-        const cfg: Partial<StreamConfig> = {
-          name: streamName,
-          subjects: subjectName ? subjectName.split(',') : [streamName],
-          retention: RetentionPolicy[typedRetentionPolicy],
-          storage: StorageType[typedStorgage],
-        };
-        await jsm.streams.add(cfg);
-        this.logger?.log(`Created stream: ${streamName}`);
-      },
-    );
+      if (merged.length === currentSubjects.length) {
+        this.logger?.log(`All subject(s) [${newSubjects.join(', ')}] already present on stream: ${streamName}`);
+        return;
+      }
+
+      streamInfo.config.subjects = merged;
+
+      // Depending on your nats.js version, this is either:
+      // await jsm.streams.update(streamInfo.config);
+      // or:
+      await jsm.streams.update(streamName, streamInfo.config);
+
+      this.logger?.log(`Updated stream: ${streamName} with subjects: ${newSubjects.join(', ')}`);
+    } catch (err) {
+      // If the stream isn't found, nats.js throws a NatsError with code 404/STREAM_NOT_FOUND
+      const error = err as { code: string; message: string };
+      const code = error?.code;
+
+      if (code !== '404') {
+        this.logger?.error(`Error checking stream: ${streamName}`);
+        this.logger?.error(error.message);
+        throw new Error(error.message);
+      }
+
+      // Stream doesn't exist -> create it
+      const typedRetentionPolicy = startupConfig.producerRetentionPolicy as keyof typeof RetentionPolicy;
+      const typedStorage = startupConfig.producerStorage as keyof typeof StorageType;
+
+      const cfg: Partial<StreamConfig> = {
+        name: streamName,
+        subjects: newSubjects.length ? newSubjects : [streamName],
+        retention: RetentionPolicy[typedRetentionPolicy],
+        storage: StorageType[typedStorage],
+      };
+
+      await jsm.streams.add(cfg);
+      this.logger?.log(`Created stream: ${streamName} with subjects: ${cfg.subjects?.join(', ')}`);
+    }
   }
 
   /**
@@ -290,16 +310,17 @@ export class JetstreamService implements IStartupService {
 
   async consume(js: JetStreamClient, onMessage: onMessageFunction, consumerStreamName: string, functionName: string): Promise<void> {
     // Get the consumer to listen to messages for
-    const consumer = await js.consumers.get(consumerStreamName, functionName);
+    const consumer = await js.consumers.get(consumerStreamName, this.functionName);
 
     // create a simple consumer and iterate over messages matching the subscription
     const sub = await consumer.consume({ max_messages: 1 });
 
     for await (const message of sub) {
       this.logger?.log(`${Date.now().toLocaleString()} S:[${message.seq}] Q:[${message.subject}]: ${message.data.length}`);
-      const request = message.json<string>();
+      const messageDecoded = FRMSMessage.decode(message.data);
+      const messageObject = FRMSMessage.toObject(messageDecoded);
       try {
-        onMessage(request, (msg) => {
+        onMessage(messageObject, (msg) => {
           void this.handleResponse(msg);
         });
       } catch (error) {

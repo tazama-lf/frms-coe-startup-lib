@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0
-
 import type { IStartupService, onMessageFunction } from '..';
 import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
@@ -60,17 +59,29 @@ export class StartupFactory implements IStartupService {
   // Command Channel Methods
   async initCommandChannel(onMessage: onMessageFunction, consumerStream: string, loggerService?: ILoggerService): Promise<boolean> {
     try {
-      return await this.commandChannel.init(onMessage, loggerService, [consumerStream]);
+      return await this.commandChannel.init(onMessage, loggerService, [consumerStream], startupConfig.producerStreamName);
     } catch (error) {
-      throw new Error(`Error when starting up Command Channel ${JSON.stringify(error)}`);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      const wrappedError = new Error(`Error when starting up Command Channel: ${errorMessage}`);
+      if (error instanceof Error) {
+        wrappedError.stack = error.stack;
+        wrappedError.cause = error;
+      }
+      throw wrappedError;
     }
   }
 
   async initCommandChannelProducer(loggerService?: ILoggerService): Promise<boolean> {
     try {
-      return await this.commandChannel.initProducer(loggerService);
+      return await this.commandChannel.initProducer(loggerService, startupConfig.producerStreamName);
     } catch (error) {
-      throw new Error(`Error when starting up Command Channel Producer ${JSON.stringify(error)}`);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      const wrappedError = new Error(`Error when starting up Command Channel Producer: ${errorMessage}`);
+      if (error instanceof Error) {
+        wrappedError.stack = error.stack;
+        wrappedError.cause = error;
+      }
+      throw wrappedError;
     }
   }
 
