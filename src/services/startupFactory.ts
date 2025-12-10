@@ -57,9 +57,20 @@ export class StartupFactory implements IStartupService {
   }
 
   // Command Channel Methods
-  async initCommandChannel(onMessage: onMessageFunction, consumerStream: string, loggerService?: ILoggerService): Promise<boolean> {
+  async initCommandChannel(
+    onMessage: onMessageFunction,
+    consumerStream: string,
+    loggerService?: ILoggerService,
+    producerStreamName?: string,
+  ): Promise<boolean> {
     try {
-      return await this.commandChannel.init(onMessage, loggerService, [consumerStream], startupConfig.producerStreamName);
+      return await this.commandChannel.init(
+        onMessage,
+        loggerService,
+        [consumerStream],
+        producerStreamName ?? startupConfig.commandChannelProducerStreamName,
+        true,
+      );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
       const wrappedError = new Error(`Error when starting up Command Channel: ${errorMessage}`);
@@ -71,9 +82,13 @@ export class StartupFactory implements IStartupService {
     }
   }
 
-  async initCommandChannelProducer(loggerService?: ILoggerService): Promise<boolean> {
+  async initCommandChannelProducer(loggerService?: ILoggerService, producerStreamName?: string): Promise<boolean> {
     try {
-      return await this.commandChannel.initProducer(loggerService, startupConfig.producerStreamName);
+      return await this.commandChannel.initProducer(
+        loggerService,
+        producerStreamName ?? startupConfig.commandChannelProducerStreamName,
+        true,
+      );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
       const wrappedError = new Error(`Error when starting up Command Channel Producer: ${errorMessage}`);

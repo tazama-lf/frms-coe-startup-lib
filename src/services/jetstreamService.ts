@@ -56,6 +56,7 @@ export class JetstreamService implements IStartupService {
     loggerService?: ILoggerService,
     parConsumerStreamNames?: string[],
     parProducerStreamName?: string,
+    isCommandChannel = false,
   ): Promise<boolean> {
     try {
       // Validate additional Environmental Variables.
@@ -71,7 +72,7 @@ export class JetstreamService implements IStartupService {
       if (!this.NatsConn || !this.jsm || !this.js || !this.logger) return await Promise.resolve(false);
 
       // Add consumer streams
-      await this.createConsumer(this.functionName, this.jsm, this.consumerStreamName);
+      await this.createConsumer(this.functionName, this.jsm, this.consumerStreamName, isCommandChannel);
 
       if (this.consumerStreamName) await this.consume(this.js, onMessage, this.consumerStreamName, this.functionName);
     } catch (err) {
@@ -106,7 +107,7 @@ export class JetstreamService implements IStartupService {
    *
    * @return {*}  {Promise<boolean>}
    */
-  async initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean> {
+  async initProducer(loggerService?: ILoggerService, parProducerStreamName?: string, isCommandChannel?: boolean): Promise<boolean> {
     await this.validateEnvironment();
     this.logger = getLogger(startupConfig, loggerService);
 
@@ -147,7 +148,7 @@ export class JetstreamService implements IStartupService {
 
       while (!connected) {
         this.logger!.log('Attempting to recconect to NATS...');
-        connected = await this.connectNats();
+        connected = await this.connectNats(isCommandChannel ?? false);
         if (!connected) {
           this.logger!.warn('Unable to connect, retrying....');
           await setTimeout(5000);
@@ -161,7 +162,7 @@ export class JetstreamService implements IStartupService {
   }
 
   async validateEnvironment(parProducerStreamName?: string): Promise<void> {
-    if (!startupConfig.producerStreamName && !parProducerStreamName) {
+    if (!startupConfig.producerStreamName && !parProducerStreamName && !startupConfig.commandChannelProducerStreamName) {
       throw new Error('No Producer Stream Name Provided in environmental Variable');
     }
 
@@ -175,7 +176,7 @@ export class JetstreamService implements IStartupService {
     await Promise.resolve(undefined);
   }
 
-  async connectNats(): Promise<boolean> {
+  async connectNats(isCommandChannel: boolean): Promise<boolean> {
     try {
       this.NatsConn = await connect(this.server);
 
@@ -183,7 +184,7 @@ export class JetstreamService implements IStartupService {
       this.js = this.NatsConn.jetstream();
 
       if (this.consumerStreamName && this.onMessage) {
-        await this.createConsumer(this.functionName, this.jsm, this.consumerStreamName);
+        await this.createConsumer(this.functionName, this.jsm, this.consumerStreamName, isCommandChannel);
         await this.consume(this.js, this.onMessage, this.consumerStreamName, this.functionName);
       }
     } catch (error) {
@@ -193,12 +194,22 @@ export class JetstreamService implements IStartupService {
     return true;
   }
 
-  async createConsumer(functionName: string, jsm: JetStreamManager, consumerStreamName: string): Promise<void> {
+  async createConsumer(functionName: string, jsm: JetStreamManager, consumerStreamName: string, isCommandChannel: boolean): Promise<void> {
     const consumerStreams = consumerStreamName.split(',');
 
     for (const stream of consumerStreams) {
-      await this.createStream(jsm, stream, startupConfig.streamSubject ? startupConfig.streamSubject : undefined);
-      const streamSubjects = startupConfig.streamSubject ? startupConfig.streamSubject.split(',') : [startupConfig.consumerStreamName];
+      let createStreamSubject = startupConfig.streamSubject ? startupConfig.streamSubject : undefined;
+      let streamSubjects = startupConfig.streamSubject ? startupConfig.streamSubject.split(',') : [startupConfig.consumerStreamName];
+
+      if (isCommandChannel) {
+        createStreamSubject = startupConfig.commandChannelStreamSubject ? startupConfig.commandChannelStreamSubject : undefined;
+        streamSubjects = startupConfig.commandChannelStreamSubject
+          ? startupConfig.commandChannelStreamSubject.split(',')
+          : [startupConfig.commandChannelConsumerStreamName];
+      }
+
+      await this.createStream(jsm, stream, createStreamSubject);
+
       this.functionName = `${functionName}-${randomUUID()}`;
       const typedAckPolicy = startupConfig.ackPolicy;
       const consumerCfg: Partial<ConsumerConfig> = {
