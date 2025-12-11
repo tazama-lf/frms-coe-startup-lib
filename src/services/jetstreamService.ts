@@ -13,13 +13,13 @@ import {
   type NatsConnection,
   type StreamConfig,
 } from 'nats';
+import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
-import type { tHeader, IStartupService } from '../interfaces/iStartupService';
+import type { IStartupService, tHeader } from '../interfaces/iStartupService';
 import type { onMessageFunction } from '../types/onMessageFunction';
 import { getLogger } from '../utils';
-import { randomUUID } from 'node:crypto';
 
 export class JetstreamService implements IStartupService {
   server = {
@@ -329,7 +329,15 @@ export class JetstreamService implements IStartupService {
     for await (const message of sub) {
       this.logger?.log(`${Date.now().toLocaleString()} S:[${message.seq}] Q:[${message.subject}]: ${message.data.length}`);
       const messageDecoded = FRMSMessage.decode(message.data);
-      const messageObject = FRMSMessage.toObject(messageDecoded);
+
+      let messageObject;
+      if (message.headers?.keys().length) {
+        // if there are headers include them, evaluation channel support no headers
+        messageObject = { message: FRMSMessage.toObject(messageDecoded), headers: message.headers };
+      } else {
+        messageObject = FRMSMessage.toObject(messageDecoded);
+      }
+
       try {
         onMessage(messageObject, (msg) => {
           void this.handleResponse(msg);
