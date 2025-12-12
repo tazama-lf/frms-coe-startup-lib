@@ -19,6 +19,7 @@ Key features:
 - **Service Initialization**: Abstractions for initializing NATS.
 - **Message Handling**: Standardized interfaces for processing incoming messages.
 - **Configuration Management**: Tools for loading and managing service-specific configurations.
+- **Processor Command Channel**: Feature responsible for on-demand configuration update for Tazama engine.
 - **Logging**: Integration with custom logging services for consistent log management across services.
 
 ## Installation
@@ -57,7 +58,7 @@ Once installed, you can import the library in your project:
 
 ## Usage
 
-The `frms-coe-startup-lib` library provides an abstraction for initializing and managing NATS. This includes encoding the payload before sending it as well as decoding the payload after it has been received. It includes the `StartupFactory` and `IStartupService` interface for creating and managing services.
+The `frms-coe-startup-lib` library provides an abstraction for initializing and managing NATS and NATS (JetStream). This includes encoding the payload before sending it as well as decoding the payload after it has been received. It includes the `StartupFactory` and `IStartupService` interface for creating and managing services.
 
 ### **Initializing a Service**
 
@@ -154,11 +155,6 @@ If provided in the call to `init()`, this will be a subject to listen for messag
     - **Methods**:
       - `relay(data: Uint8Array): void'`: Relays a message
 
-  - **Interface**: IRelayConfig
-    - **Properties**:
-      - `destinationType: 'nats' | 'rabbitmq' | 'rest'`: The type of service to relay to.
-      - `destinationUrl: string`: Endpoint to relay messages to
-      - `producerStream: string`: Read from the startup config
 4. **Types**
 
   - **onMessageFunction**
@@ -253,24 +249,13 @@ The `frms-coe-startup-lib` library uses environment variables to configure the s
 - `PRODUCER_STREAM`: The name of the producer stream.
 - `CONSUMER_STREAM`: The name of the consumer stream.
 
-### Relay Environment Variables
+### PROCESSOR COMMAND CHANNEL
 
-- `DESTINATION_URL`: Specifies the startup type (`nats`).
-- `DESTINATION_TYPE`: The node environment (`development`, `production`, etc.).
+- `COMMAND_CHANNEL_PRODUCER_STREAM`: The name of the producer stream for processor command chanel.
+- `COMMAND_CHANNEL_CONSUMER_STREAM`: The name of the consumer stream for processor command chanel.
+- `COMMAND_CHANNEL_STREAM_SUBJECT:`: The filter down of consumer identifier for processor command chanel.
 
-#### NATS-Specific Relay Variables
-- `PRODUCER_STREAM`: The destination to relay messages to
 
-#### Rest-Specific Relay Variables
-- `JSON_PAYLOAD`: Convert the message to json before relaying
-- `MAX_SOCKETS`: Max http/https sockets limit
-
-#### RabbitMQ-Specific Relay Variables
-- `QUEUE`: Name of the queue for the RabbitMQ producer
-
-#### Google Cloud Bucket-Specific Relay Variables
-- `GOOGLE_BUCKET_NAME`: Name of the google bucket you are planning to save to.
-- `GOOGLE_APPLICATION_CREDENTIALS`: Path to the service account key file required to connect to the bucket.
 
 ### Configuration Files
 
