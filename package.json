@@ -33,7 +33,7 @@
     "@google-cloud/storage": "^7.16.0",
     "@tazama-lf/frms-coe-lib": "6.0.0",
     "amqplib": "0.10.6",
-    "axios": "^1.12.2",
+    "axios": "^1.15.0",
     "google-auth-library": "^10.2.0",
     "nats": "^2.29.3"
   },
