@@ -5,7 +5,8 @@ import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import type { onMessageFunction } from '../types/onMessageFunction';
 import type { IStartupService } from '..';
-import FRMSMessage from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
+import { createMessageBuffer, decodeMessageBuffer } from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
+//import { FRMSMessage } from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
 import { getLogger } from '../utils';
 
 export class NatsService implements IStartupService {
@@ -83,8 +84,7 @@ export class NatsService implements IStartupService {
   async subscribe(subscription: Subscription, onMessage: onMessageFunction): Promise<void> {
     for await (const message of subscription) {
       this.logger?.log(`${Date.now().toLocaleString()} sid:[${message.sid}] subject:[${message.subject}]: ${message.data.length}`);
-      const messageDecoded = FRMSMessage.decode(message.data);
-      const messageObject = FRMSMessage.toObject(messageDecoded);
+      const messageObject = decodeMessageBuffer(Buffer.from(message.data));
 
       onMessage(messageObject, (msg) => {
         void this.handleResponse(msg);
@@ -168,8 +168,7 @@ export class NatsService implements IStartupService {
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Diffrent implementations of the handleresponse interface require a async signature.
   async handleResponse(response: object, subject?: string[]): Promise<void> {
-    const message = FRMSMessage.create(response);
-    const messageBuffer = FRMSMessage.encode(message).finish();
+    const messageBuffer = createMessageBuffer(response as Record<string, unknown>);
 
     if (this.producerStreamName && this.NatsConn) {
       if (!subject) {
