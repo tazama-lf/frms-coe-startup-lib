@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "publish:dev": "npm publish --tag psl",
+    "publish:dev": "npm publish --tag rc",
     "clean": "npx rimraf lib node_modules coverage package-lock.json",
     "dry": "npm publish --dry-run",
     "test": "jest --config=jest.config.ts --passWithNoTests",
