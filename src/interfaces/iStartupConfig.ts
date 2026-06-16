@@ -11,12 +11,12 @@ dotenv({
 
 export interface IStartupConfig {
   /**
-   *Configure the service type that should be started up, eg, Nats = 'nats' or Jetstream = 'jetstream'
+   *The transport used to start the service. Always 'nats'; the JetStream transport has been removed.
    *
-   * @type {('nats' | 'jetstream')}
+   * @type {'nats'}
    * @memberof IStartupConfig
    */
-  startupType: 'nats' | 'jetstream';
+  startupType: 'nats';
   ackPolicy: 'None' | 'All' | 'Explicit' | 'NotSet';
   /**
    *Could be either "Memory" or "File"
@@ -70,7 +70,8 @@ export interface IStartupConfig {
 }
 
 export const startupConfig: IStartupConfig = {
-  startupType: validateEnvVar('STARTUP_TYPE', 'string').toString() as 'nats' | 'jetstream',
+  // STARTUP_TYPE is no longer read: the library only supports the NATS transport.
+  startupType: 'nats',
   env: validateEnvVar('NODE_ENV', 'string').toString(),
   serverUrl: validateEnvVar('SERVER_URL', 'string').toString(),
   functionName: validateEnvVar('FUNCTION_NAME', 'string').toString(),

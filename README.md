@@ -246,7 +246,6 @@ flowchart LR
 
 The `frms-coe-startup-lib` library uses environment variables to configure the startup process and service connections. Key environment variables include:
 
-- `STARTUP_TYPE`: Specifies the startup type (`nats`).
 - `NODE_ENV`: The node environment (`development`, `production`, etc.).
 - `SERVER_URL`: The URL of the server (e.g., NATS server).
 - `FUNCTION_NAME`: The name of the function or service.
@@ -285,7 +284,7 @@ Logging can be configured using environment variables or configuration files. Op
 
 ### Stream and Subject Configuration
 
-The library can be configured to interact with specific streams and subjects in the message broker. These are specified using the `PRODUCER_STREAM`, `CONSUMER_STREAM`, and `STREAM_SUBJECT` environment variables.
+The library can be configured to interact with specific streams and subjects in the message broker. These are specified using the `PRODUCER_STREAM` and `CONSUMER_STREAM` environment variables.
 
 ## Contributing
 
