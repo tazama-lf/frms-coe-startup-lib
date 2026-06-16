@@ -3,20 +3,24 @@
 import type { IStartupService, onMessageFunction } from '..';
 import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
-import { JetstreamService } from './jetstreamService';
 import { NatsService } from './natsService';
 
 export class StartupFactory implements IStartupService {
   startupService: IStartupService;
   /**
-   *  Initializes a new startup service which would either be a Jetstream or Nats server, depending on the configurd SERVER_TYPE env variable ('nats' | 'jestream')
+   *  Initializes a new NATS startup service. NATS is the only supported transport; the switch retains a
+   *  default arm so any unexpected startupType still resolves to NatsService rather than leaving the
+   *  service undefined.
    */
   constructor() {
-    switch (startupConfig.startupType) {
-      case 'jetstream':
-        this.startupService = new JetstreamService();
-        break;
+    // startupType is typed 'nats', but it is cast to string here so the default arm remains a genuine
+    // runtime guard against any unexpected value (defence-in-depth) without tripping the
+    // switch-exhaustiveness check.
+    switch (startupConfig.startupType as string) {
       case 'nats':
+        this.startupService = new NatsService();
+        break;
+      default:
         this.startupService = new NatsService();
         break;
     }
