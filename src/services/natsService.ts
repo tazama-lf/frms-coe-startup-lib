@@ -180,4 +180,95 @@ export class NatsService implements IStartupService {
       }
     }
   }
+
+  /**
+   * Initialize the service-channel producer connection.
+   *
+   * Mirrors {@link initProducer}'s single `connect`, but degrades rather than throws: a failed
+   * service-channel connect is logged and non-fatal, so the host service keeps running its
+   * transaction-plane work. nats.js default auto-reconnect handles later drops.
+   *
+   * @param {ILoggerService} [loggerService] Optional injected logger.
+   * @return {Promise<boolean>} `true` when connected, `false` when the initial connect failed.
+   */
+  async initServiceChannelProducer(loggerService?: ILoggerService): Promise<boolean> {
+    this.logger = getLogger(startupConfig, loggerService);
+    try {
+      this.logger.log(`Attempting service-channel connection to NATS on: ${JSON.stringify(this.server)}`);
+      this.NatsConn = await connect(this.server);
+      this.logger.log(`Service channel connected to ${this.NatsConn.getServer()}`);
+      this.functionName = startupConfig.functionName.replace(/\./g, '_');
+
+      this.NatsConn.closed().then(() => {
+        this.logger?.log('Service-channel connection lost to NATS Server.');
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
+      this.logger.log(`Service-channel connect failed (non-fatal): ${errorMessage}`);
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Publish an opaque body to a service-channel subject.
+   *
+   * The bytes are published verbatim - no protobuf encode (a behavioural fork from
+   * {@link handleResponse}); serialization belongs to the caller.
+   *
+   * @param {Uint8Array} body Opaque payload published as-is.
+   * @param {string} [subject] Target subject; defaults to `SERVICE_CHANNEL_PRODUCER`.
+   * @return {Promise<void>}
+   * @throws {Error} When neither `subject` nor `SERVICE_CHANNEL_PRODUCER` is set.
+   */
+  // eslint-disable-next-line @typescript-eslint/require-await -- async signature mirrors the publish-primitive contract
+  async publishServiceChannel(body: Uint8Array, subject?: string): Promise<void> {
+    const target = subject ?? startupConfig.serviceChannelProducer;
+    if (!target) {
+      throw new Error('No subject provided and SERVICE_CHANNEL_PRODUCER is not set in the environment.');
+    }
+
+    this.NatsConn?.publish(target, body);
+    this.logger?.log(`Service-channel published ${body.length} bytes to subject:[${target}]`);
+  }
+
+  /**
+   * Subscribe to a service-channel subject and invoke `onMessage` with each message's raw bytes.
+   *
+   * Subscribes with NO queue group - a plain core-NATS subscription, so the subject is broadcast
+   * fan-out (every instance receives every message), unlike the transaction-plane {@link subscribe}'s
+   * `{ queue }` load-balancing. `message.data` is handed to `onMessage` un-decoded (no protobuf).
+   *
+   * @param {(data: Uint8Array) => void | Promise<void>} onMessage Per-message handler.
+   * @param {string} [subject] Subject to subscribe to; defaults to `SERVICE_CHANNEL_CONSUMER`.
+   * @param {ILoggerService} [loggerService] Optional injected logger.
+   * @return {Promise<boolean>} `true` once subscribed, `false` when there is no connection.
+   * @throws {Error} When neither `subject` nor `SERVICE_CHANNEL_CONSUMER` is set.
+   */
+  // eslint-disable-next-line @typescript-eslint/require-await -- async signature mirrors the consumer-primitive contract
+  async initServiceChannel(
+    onMessage: (data: Uint8Array) => void | Promise<void>,
+    subject?: string,
+    loggerService?: ILoggerService,
+  ): Promise<boolean> {
+    const target = subject ?? startupConfig.serviceChannelConsumer;
+    if (!target) {
+      throw new Error('No subject provided and SERVICE_CHANNEL_CONSUMER is not set in the environment.');
+    }
+
+    if (loggerService) this.logger = getLogger(startupConfig, loggerService);
+    if (!this.NatsConn) return false;
+
+    const subscription = this.NatsConn.subscribe(target);
+    void this.consumeServiceChannel(subscription, onMessage);
+    return true;
+  }
+
+  async consumeServiceChannel(subscription: Subscription, onMessage: (data: Uint8Array) => void | Promise<void>): Promise<void> {
+    for await (const message of subscription) {
+      this.logger?.log(`Service-channel received sid:[${message.sid}] subject:[${message.subject}]: ${message.data.length} bytes`);
+      await onMessage(message.data);
+    }
+  }
 }

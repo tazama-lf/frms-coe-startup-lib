@@ -58,4 +58,23 @@ export class StartupFactory implements IStartupService {
   async handleResponse(response: object, subject?: string[]): Promise<void> {
     await this.startupService.handleResponse(response, subject);
   }
+
+  // Service-channel transport (Part B, #279): thin pass-throughs to the single underlying
+  // startupService. No separate channel instance, no wrap-and-throw, no process.on restart hooks -
+  // the service channel is a secondary, degrade-not-throw channel.
+  async initServiceChannelProducer(loggerService?: ILoggerService): Promise<boolean> {
+    return await this.startupService.initServiceChannelProducer!(loggerService);
+  }
+
+  async publishServiceChannel(body: Uint8Array, subject?: string): Promise<void> {
+    await this.startupService.publishServiceChannel!(body, subject);
+  }
+
+  async initServiceChannel(
+    onMessage: (data: Uint8Array) => void | Promise<void>,
+    subject?: string,
+    loggerService?: ILoggerService,
+  ): Promise<boolean> {
+    return await this.startupService.initServiceChannel!(onMessage, subject, loggerService);
+  }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@tazama-lf/frms-coe-startup-lib",
-  "version": "3.0.2-rc.6",
+  "version": "3.1.0-rc.0",
   "description": "Tazama startup package library",
   "main": "lib/index.js",
   "repository": {
@@ -30,7 +30,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@tazama-lf/frms-coe-lib": "8.0.0-rc.3",
+    "@tazama-lf/frms-coe-lib": "8.2.0-rc.0",
     "amqplib": "0.10.6",
     "axios": "^1.13.5",
     "nats": "^2.29.3"
