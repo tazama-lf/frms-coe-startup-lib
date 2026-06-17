@@ -15,6 +15,10 @@ export interface IStartupService {
   initProducer: (loggerService?: ILoggerService, parProducerStreamName?: string) => Promise<boolean>;
   handleResponse: (response: object, subject?: string[]) => Promise<void>;
 
+  // Runtime additive data-plane subscribe (#282). Optional and additive: extends the running
+  // consumer with new subjects without reconnecting or tearing down existing subscriptions.
+  addConsumers?: (subjects: string[], onMessage: onMessageFunction) => Promise<boolean>;
+
   // Service-channel transport (Part B, #279). Optional and additive: carries opaque bytes on an
   // isolated core-NATS subject, independent of the transaction-plane methods above.
   initServiceChannelProducer?: (loggerService?: ILoggerService) => Promise<boolean>;

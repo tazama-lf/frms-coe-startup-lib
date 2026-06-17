@@ -134,6 +134,20 @@ Each method accepts an explicit `subject` argument; when omitted it falls back t
 
 > **Note:** `FUNCTION_NAME` is now enforced `/`-free at startup (it may still contain dots, e.g. `typology-001@1.0.0`). A `FUNCTION_NAME` containing `/` fails fast at load time.
 
+### **Runtime Additive Subscribe (`addConsumers`)**
+
+`addConsumers` is the runtime sibling of `init`. Where `init` stands the transaction-plane consumers up at startup, `addConsumers` extends them on the **already-running** connection without reconnecting or tearing down existing subscriptions - the additive half of a make-before-break re-subscribe (for example, after a network-map reload adds new rule subjects).
+
+```typescript
+// Already initialised via init(...). On a reload, add the newly required subjects:
+const added = await service.addConsumers(['pub-rule-123', 'pub-rule-456'], handleTransaction);
+```
+
+- **Additive only**: new, non-empty subjects not already in `consumerStreamName` are subscribed with the same load-balanced `{ queue: FUNCTION_NAME }` group as `init` and wired into the existing consume loop; `consumerStreamName` is extended with them.
+- **Idempotent**: subjects already subscribed, empty strings, and repeats within the input are skipped - no duplicate subscriptions.
+- **No teardown**: existing subscriptions (transaction-plane and service-channel) are left intact; there is no reconnect and no unsubscribe/drain. Removing stale subjects is intentionally out of scope.
+- **Guarded**: called with no live connection, it logs and returns `false` without throwing. Returns `true` once the additive subscribe completes, including no-ops.
+
 ## Modules and Classes
 
 1. **Startup Factory**
@@ -142,6 +156,7 @@ Each method accepts an explicit `subject` argument; when omitted it falls back t
     - **Description**: Manages the initialization and handling of the message broker
     - **Methods**:
       - `init(onMessage: onMessageFunction, loggerService?: ILoggerService, parConsumerStreamNames?: string[], parProducerStreamName?: string): Promise<boolean>`: Initializes the startup service.
+      - `addConsumers(subjects: string[], onMessage: onMessageFunction): Promise<boolean>`: Additively subscribes to new transaction-plane subjects at runtime without reconnecting or tearing down existing subscriptions; idempotent, returns `false` if not connected.
       - `initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean>`: Initializes the producer stream.
       - `handleResponse(response: object, subject?: string[]): Promise<void>`: Handles responses from the startup service.
       - `initServiceChannelProducer(loggerService?: ILoggerService): Promise<boolean>`: Connects the service-channel producer (degrade-not-throw).
@@ -154,6 +169,7 @@ Each method accepts an explicit `subject` argument; when omitted it falls back t
     - **Description**: Manages the initialization and handling of NATS services, including subscribing and publishing messages.
     - **Methods**:
       - `init(onMessage: onMessageFunction, loggerService?: ILoggerService, parConsumerStreamNames?: string[], parProducerStreamName?: string): Promise<boolean>`: Initializes the NATS service.
+      - `addConsumers(subjects: string[], onMessage: onMessageFunction): Promise<boolean>`: Additively subscribes to new transaction-plane subjects on the running connection (idempotent, make-before-break); returns `false` when there is no live connection.
       - `initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean>`: Initializes the producer stream for NATS.
       - `handleResponse(response: object, subject?: string[]): Promise<void>`: Publishes a response. When one or more explicit `subject`s are supplied, it publishes to each of them (run-time, per-message routing); otherwise it falls back to the configured `PRODUCER_STREAM`. With neither an explicit subject nor a configured producer stream, it throws. A no-op when there is no active connection.
       - `subscribe(subscription: Subscription, onMessage: onMessageFunction): Promise<void>`: Subscribes to a NATS subject and processes incoming messages.

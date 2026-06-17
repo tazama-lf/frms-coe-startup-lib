@@ -96,6 +96,39 @@ export class NatsService implements IStartupService {
   }
 
   /**
+   * Additively subscribe to new transaction-plane consumer subjects on the already-running connection.
+   *
+   * Runtime sibling of {@link init}: where `init` stands the consumers up at startup, `addConsumers`
+   * extends them at runtime WITHOUT reconnecting or tearing down existing subscriptions
+   * (the additive half of make-before-break re-subscribe on network-map reload).
+   *
+   * Idempotent: subjects already present in `consumerStreamName`, empty strings, and repeats within
+   * the input are skipped. Returns `false` (without throwing) when there is no live connection.
+   *
+   * @param {string[]} subjects Consumer subjects to add. New, non-empty, not-already-subscribed ones
+   * are subscribed with the `{ queue: functionName }` group and wired into the existing consume loop.
+   * @param {onMessageFunction} onMessage Callback invoked for every message on the added subjects.
+   * @return {*} {Promise<boolean>} `true` once the additive subscribe completed (including no-ops), `false` if not connected.
+   */
+  async addConsumers(subjects: string[], onMessage: onMessageFunction): Promise<boolean> {
+    if (!this.NatsConn) {
+      this.logger?.warn('addConsumers called with no live NATS connection; nothing subscribed');
+      return await Promise.resolve(false);
+    }
+
+    const existing = this.consumerStreamName ?? [];
+    const toAdd = [...new Set(subjects.filter((subject) => subject && !existing.includes(subject)))];
+
+    for (const subject of toAdd) {
+      const subscription = this.NatsConn.subscribe(subject, { queue: this.functionName });
+      void this.subscribe(subscription, onMessage);
+    }
+
+    this.consumerStreamName = [...existing, ...toAdd];
+    return true;
+  }
+
+  /**
    * Initialize Nats Producer
    *
    * @export
