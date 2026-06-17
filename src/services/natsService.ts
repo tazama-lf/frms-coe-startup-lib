@@ -87,7 +87,9 @@ export class NatsService implements IStartupService {
       const messageObject = decodeMessageBuffer(Buffer.from(message.data));
 
       onMessage(messageObject, (msg) => {
-        void this.handleResponse(msg);
+        this.handleResponse(msg).catch((err: unknown) => {
+          this.logger?.error(`Error handling response on default path: ${err instanceof Error ? err.message : JSON.stringify(err)}`);
+        });
       });
       Promise.resolve();
     }
@@ -109,7 +111,7 @@ export class NatsService implements IStartupService {
    * @return {*}  {Promise<boolean>}
    */
   async initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean> {
-    this.validateEnvironment(parProducerStreamName);
+    this.validateEnvironment();
     this.logger = getLogger(startupConfig, loggerService);
 
     try {
@@ -144,11 +146,7 @@ export class NatsService implements IStartupService {
     return true;
   }
 
-  validateEnvironment(parProducerStreamName?: string): void {
-    if (!startupConfig.producerStreamName && !parProducerStreamName) {
-      throw new Error('No Producer Stream Name Provided in environmental Variable or on startup as an arguement');
-    }
-
+  validateEnvironment(): void {
     if (!startupConfig.serverUrl) {
       throw new Error('No Server URL was Provided in environmental Variable');
     }
@@ -168,17 +166,22 @@ export class NatsService implements IStartupService {
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Diffrent implementations of the handleresponse interface require a async signature.
   async handleResponse(response: object, subject?: string[]): Promise<void> {
+    if (!this.NatsConn) return;
+
     const messageBuffer = createMessageBuffer(response as Record<string, unknown>);
 
-    if (this.producerStreamName && this.NatsConn) {
-      if (!subject) {
-        this.NatsConn.publish(this.producerStreamName, messageBuffer);
-      } else {
-        for (const sub of subject) {
-          this.NatsConn.publish(sub, messageBuffer);
-        }
+    if (subject && subject.length > 0) {
+      for (const sub of subject) {
+        this.NatsConn.publish(sub, messageBuffer);
       }
+      return;
     }
+
+    if (!this.producerStreamName) {
+      throw new Error('No subject supplied and no PRODUCER_STREAM configured; cannot determine a publish destination.');
+    }
+
+    this.NatsConn.publish(this.producerStreamName, messageBuffer);
   }
 
   /**

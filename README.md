@@ -100,7 +100,7 @@ CONSUMER_STREAM=ConsumerA,ConsumerB,ConsumerC
 Will configure `ConsumerA`, `ConsumerB` and `ConsumerC` as consumers.
 
 #### `parProducerStreamName`
-If provided in the call to `init()`, this will be a subject to listen for messages on. If not provided, an environment variable: `PRODUCER_STREAM`, is read.
+Optional. Sets a **default** publish destination used by `handleResponse` only when no explicit subject is supplied. If omitted here, the `PRODUCER_STREAM` environment variable is read instead. Either source is optional: a content-based router that always passes explicit subjects to `handleResponse` does not need a producer stream at all. When neither a producer stream nor an explicit subject is available, `handleResponse` throws rather than silently dropping the message.
 
 ### **Service Channel Transport**
 
@@ -155,7 +155,7 @@ Each method accepts an explicit `subject` argument; when omitted it falls back t
     - **Methods**:
       - `init(onMessage: onMessageFunction, loggerService?: ILoggerService, parConsumerStreamNames?: string[], parProducerStreamName?: string): Promise<boolean>`: Initializes the NATS service.
       - `initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean>`: Initializes the producer stream for NATS.
-      - `handleResponse(response: object, subject?: string[]): Promise<void>`: Handles responses and publishes them to the producer stream.
+      - `handleResponse(response: object, subject?: string[]): Promise<void>`: Publishes a response. When one or more explicit `subject`s are supplied, it publishes to each of them (run-time, per-message routing); otherwise it falls back to the configured `PRODUCER_STREAM`. With neither an explicit subject nor a configured producer stream, it throws. A no-op when there is no active connection.
       - `subscribe(subscription: Subscription, onMessage: onMessageFunction): Promise<void>`: Subscribes to a NATS subject and processes incoming messages.
       - `initServiceChannelProducer(loggerService?: ILoggerService): Promise<boolean>`: Connects the service-channel producer; a failed connect is logged and non-fatal.
       - `publishServiceChannel(body: Uint8Array, subject?: string): Promise<void>`: Publishes the caller's bytes verbatim (no protobuf) to a service-channel subject.
@@ -293,7 +293,7 @@ The `frms-coe-startup-lib` library uses environment variables to configure the s
 - `NODE_ENV`: The node environment (`development`, `production`, etc.).
 - `SERVER_URL`: The URL of the server (e.g., NATS server).
 - `FUNCTION_NAME`: The name of the function or service. Enforced `/`-free at startup (dots are allowed).
-- `PRODUCER_STREAM`: The name of the producer stream.
+- `PRODUCER_STREAM`: Optional. The default producer stream used by `handleResponse` when no explicit subject is supplied. Services that route every message to a run-time-computed subject can leave this unset.
 - `CONSUMER_STREAM`: The name of the consumer stream.
 
 #### Service Channel Variables
@@ -334,7 +334,7 @@ Logging can be configured using environment variables or configuration files. Op
 
 ### Stream and Subject Configuration
 
-The library can be configured to interact with specific streams and subjects in the message broker. These are specified using the `PRODUCER_STREAM` and `CONSUMER_STREAM` environment variables.
+The library can be configured to interact with specific streams and subjects in the message broker. These are specified using the `PRODUCER_STREAM` and `CONSUMER_STREAM` environment variables. `CONSUMER_STREAM` is required to subscribe; `PRODUCER_STREAM` is an optional default destination - it is only consulted by `handleResponse` when the caller does not supply an explicit subject.
 
 ## Contributing
 
