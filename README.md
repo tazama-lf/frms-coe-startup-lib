@@ -109,7 +109,7 @@ In addition to the transaction plane (`init` / `initProducer` / `handleResponse`
 - **Opaque bytes**: the service channel carries a raw `Uint8Array` / `Buffer`. Unlike the transaction plane, it does **not** protobuf-encode or decode - the producer publishes your bytes verbatim and the consumer hands `message.data` to your handler un-decoded. Serialization (and any envelope contract) belongs entirely to the caller.
 - **Broadcast fan-out**: `initServiceChannel` subscribes with **no queue group**, so every running instance on a subject receives every message (unlike the transaction plane's load-balanced `{ queue: FUNCTION_NAME }` pattern). This lets each instance reload its own in-memory state.
 - **Degrade-not-throw**: a failed service-channel connect is logged and non-fatal - the host service keeps running its transaction-plane work. nats.js default auto-reconnect handles later drops.
-- **Split producer / consumer roles**: a service sets `SERVICE_CHANNEL_PRODUCER` (the subject it publishes to) and/or `SERVICE_CHANNEL_CONSUMER` (the subject it subscribes to). Because a service's producer and consumer subjects always differ, a service never delivers its own messages back to itself.
+- **Split producer / consumer roles**: a service sets `SERVICE_CHANNEL_PRODUCER` (the subject it publishes to) and/or `SERVICE_CHANNEL_CONSUMER` (the subject it subscribes to). These two subjects **must differ** - the invariant is enforced at config load (the service throws on startup if `SERVICE_CHANNEL_PRODUCER` equals `SERVICE_CHANNEL_CONSUMER`), so a service never delivers its own messages back to itself.
 
 The three primitives are reachable through `StartupFactory`:
 
@@ -130,7 +130,7 @@ await service.initServiceChannel((data: Uint8Array) => {
 });
 ```
 
-Each method accepts an explicit `subject` argument; when omitted it falls back to the configured env var, and throws if neither is set. The optional `SERVICE_CHANNEL_SOURCE_URI_PREFIX` (default `''`) is the deployment-wide `source`-URI prefix used by callers to compose a CloudEvents `source` from their `/`-free `FUNCTION_NAME`.
+`publishServiceChannel` and `initServiceChannel` each accept an explicit `subject` argument; when omitted it falls back to the configured env var (`SERVICE_CHANNEL_PRODUCER` and `SERVICE_CHANNEL_CONSUMER` respectively) and throws if neither is set. `initServiceChannelProducer` takes no subject - it only opens the service-channel connection. The optional `SERVICE_CHANNEL_SOURCE_URI_PREFIX` (default `''`) is the deployment-wide `source`-URI prefix used by callers to compose a CloudEvents `source` from their `/`-free `FUNCTION_NAME`.
 
 > **Note:** `FUNCTION_NAME` is now enforced `/`-free at startup (it may still contain dots, e.g. `typology-001@1.0.0`). A `FUNCTION_NAME` containing `/` fails fast at load time.
 

@@ -9,6 +9,10 @@
 
 jest.mock('nats', () => require('./helpers/fakeNats').makeFakeNats());
 
+// Snapshot the pristine env before this file mutates it, and restore in afterAll so the
+// worker-global process.env does not leak these overrides into later test files.
+const ORIGINAL_ENV = { ...process.env };
+
 process.env.NODE_ENV = 'test';
 process.env.SERVER_URL = '0.0.0.0:4222';
 process.env.FUNCTION_NAME = 'test-function';
@@ -20,6 +24,10 @@ type FactorySurface = {
   publishServiceChannel: (body: Uint8Array, subject?: string) => Promise<void>;
   initServiceChannel: (onMessage: (data: Uint8Array) => void, subject?: string, loggerService?: unknown) => Promise<boolean>;
 };
+
+afterAll(() => {
+  process.env = ORIGINAL_ENV;
+});
 
 describe('StartupFactory exposes the service-channel surface (Q1)', () => {
   it('exposes initServiceChannelProducer, publishServiceChannel and initServiceChannel', () => {

@@ -13,6 +13,12 @@ import type { ILoggerService } from '../src/interfaces';
 
 jest.mock('nats', () => require('./helpers/fakeNats').makeFakeNats());
 
+// Snapshot the pristine env before this file sets the service-channel vars at module load, and
+// restore in afterAll. Jest gives each test file its own module registry (so the startupConfig
+// singleton does not leak across files), but process.env is worker-global; without this restore
+// these SERVICE_CHANNEL_* overrides would bleed into any later file that reads them unset.
+const ORIGINAL_ENV = { ...process.env };
+
 process.env.NODE_ENV = 'test';
 process.env.SERVER_URL = '0.0.0.0:4222';
 process.env.FUNCTION_NAME = 'test-function';
@@ -55,6 +61,10 @@ beforeEach(() => {
   fakeNats().__reset();
 });
 
+afterAll(() => {
+  process.env = ORIGINAL_ENV;
+});
+
 describe('service-channel subject defaulting from config (AC#5)', () => {
   it('publishServiceChannel falls back to SERVICE_CHANNEL_PRODUCER when no subject is given', async () => {
     const svc = makeService();
@@ -70,8 +80,7 @@ describe('service-channel subject defaulting from config (AC#5)', () => {
     const svc = makeService();
     await svc.initServiceChannelProducer(logger);
 
-    void svc.initServiceChannel(() => undefined, undefined, logger);
-    await new Promise((r) => setImmediate(r));
+    await svc.initServiceChannel(() => undefined, undefined, logger);
 
     const sub = broker().subscriptions.find((s) => s.subject === 'svc.reply');
     expect(sub).toBeDefined();

@@ -112,3 +112,18 @@ export const startupConfig: IStartupConfig = {
   ackPolicy: (process.env.ACK_POLICY as 'All' | 'Explicit') || 'Explicit',
   producerStorage: (process.env.PRODUCER_STORAGE as 'File' | 'Memory') || 'Memory',
 };
+
+// Anti-echo guard: a service must never publish to the same subject it consumes, or it delivers its
+// own service-channel messages straight back to itself. The producer/consumer split is the
+// load-bearing invariant of the service channel; enforce it at config load so a misconfiguration
+// fails fast at startup rather than silently self-echoing at runtime. Only fires when both subjects
+// are configured (both are optional-when-absent).
+if (
+  startupConfig.serviceChannelProducer &&
+  startupConfig.serviceChannelConsumer &&
+  startupConfig.serviceChannelProducer === startupConfig.serviceChannelConsumer
+) {
+  throw new Error(
+    `SERVICE_CHANNEL_PRODUCER and SERVICE_CHANNEL_CONSUMER must differ to avoid self-delivery; both are set to '${startupConfig.serviceChannelProducer}'.`,
+  );
+}

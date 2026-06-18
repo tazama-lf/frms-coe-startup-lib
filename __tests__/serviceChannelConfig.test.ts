@@ -86,3 +86,32 @@ describe('service-channel config vars (AC#5)', () => {
     expect((startupConfig as ServiceChannelConfig).serviceChannelSourceUriPrefix).toBe('https://acme.example/');
   });
 });
+
+describe('service-channel anti-echo guard (producer != consumer)', () => {
+  it('throws at config load when SERVICE_CHANNEL_PRODUCER equals SERVICE_CHANNEL_CONSUMER', () => {
+    expect(() =>
+      loadConfig({
+        SERVICE_CHANNEL_PRODUCER: 'svc.same',
+        SERVICE_CHANNEL_CONSUMER: 'svc.same',
+      }),
+    ).toThrow(/must differ/);
+  });
+
+  it('loads when producer and consumer subjects differ', () => {
+    expect(() =>
+      loadConfig({
+        SERVICE_CHANNEL_PRODUCER: 'svc.forward',
+        SERVICE_CHANNEL_CONSUMER: 'svc.reply',
+      }),
+    ).not.toThrow();
+  });
+
+  it('does not throw when only one of producer / consumer is set', () => {
+    expect(() =>
+      loadConfig({
+        SERVICE_CHANNEL_PRODUCER: 'svc.only',
+        SERVICE_CHANNEL_CONSUMER: undefined,
+      }),
+    ).not.toThrow();
+  });
+});

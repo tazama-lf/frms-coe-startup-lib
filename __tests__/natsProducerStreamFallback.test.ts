@@ -24,6 +24,9 @@ jest.mock('@tazama-lf/frms-coe-lib/lib/helpers/protobuf', () => ({
 }));
 
 // iStartupConfig reads these at module load when natsService is imported.
+// Snapshot the pristine env first and restore in afterAll so these worker-global overrides
+// do not leak into later test files.
+const ORIGINAL_ENV = { ...process.env };
 process.env.NODE_ENV = 'test';
 process.env.SERVER_URL = '0.0.0.0:4222';
 process.env.FUNCTION_NAME = 'test-function';
@@ -64,6 +67,10 @@ afterEach(() => {
   startupConfig.producerStreamName = savedProducer;
   startupConfig.serverUrl = savedServerUrl;
   startupConfig.functionName = savedFunctionName;
+});
+
+afterAll(() => {
+  process.env = ORIGINAL_ENV;
 });
 
 describe('validateEnvironment - producer stream optional (#281)', () => {

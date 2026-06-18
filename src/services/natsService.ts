@@ -86,12 +86,22 @@ export class NatsService implements IStartupService {
       this.logger?.log(`${Date.now().toLocaleString()} sid:[${message.sid}] subject:[${message.subject}]: ${message.data.length}`);
       const messageObject = decodeMessageBuffer(Buffer.from(message.data));
 
-      onMessage(messageObject, (msg) => {
-        this.handleResponse(msg).catch((err: unknown) => {
-          this.logger?.error(`Error handling response on default path: ${err instanceof Error ? err.message : JSON.stringify(err)}`);
+      // Guard the handler call without serializing the loop: keep onMessage fire-and-forget
+      // (preserving transaction-plane throughput) but never let a synchronous throw or an async
+      // rejection escape and kill the for-await consume loop, which would silently stop the subject
+      // from being serviced.
+      try {
+        const handled = onMessage(messageObject, (msg) => {
+          this.handleResponse(msg).catch((err: unknown) => {
+            this.logger?.error(`Error handling response on default path: ${err instanceof Error ? err.message : JSON.stringify(err)}`);
+          });
         });
-      });
-      Promise.resolve();
+        void Promise.resolve(handled).catch((err: unknown) => {
+          this.logger?.error(`Error in message handler on default path: ${err instanceof Error ? err.message : JSON.stringify(err)}`);
+        });
+      } catch (err: unknown) {
+        this.logger?.error(`Error in message handler on default path: ${err instanceof Error ? err.message : JSON.stringify(err)}`);
+      }
     }
   }
 
@@ -265,7 +275,15 @@ export class NatsService implements IStartupService {
       throw new Error('No subject provided and SERVICE_CHANNEL_PRODUCER is not set in the environment.');
     }
 
-    this.NatsConn?.publish(target, body);
+    // Degrade-not-throw, but never claim a success that did not happen: when there is no live
+    // connection the publish is a no-op, so surface it as a dropped-message warning instead of
+    // logging a misleading "published N bytes".
+    if (!this.NatsConn) {
+      this.logger?.warn(`Service-channel publish skipped (no live connection): ${body.length} bytes dropped for subject:[${target}]`);
+      return;
+    }
+
+    this.NatsConn.publish(target, body);
     this.logger?.log(`Service-channel published ${body.length} bytes to subject:[${target}]`);
   }
 
@@ -304,7 +322,15 @@ export class NatsService implements IStartupService {
   async consumeServiceChannel(subscription: Subscription, onMessage: (data: Uint8Array) => void | Promise<void>): Promise<void> {
     for await (const message of subscription) {
       this.logger?.log(`Service-channel received sid:[${message.sid}] subject:[${message.subject}]: ${message.data.length} bytes`);
-      await onMessage(message.data);
+      // Guard the handler call: a throwing/rejecting onMessage must not escape and kill the
+      // for-await consume loop, which would silently stop processing the service-channel subject.
+      try {
+        await onMessage(message.data);
+      } catch (err: unknown) {
+        this.logger?.error(
+          `Service-channel handler threw on subject:[${message.subject}]: ${err instanceof Error ? err.message : JSON.stringify(err)}`,
+        );
+      }
     }
   }
 }
