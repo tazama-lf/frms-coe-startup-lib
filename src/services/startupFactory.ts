@@ -43,6 +43,14 @@ export class StartupFactory implements IStartupService {
     return await this.startupService.init(onMessage, loggerService, parConsumerStreamNames, parProducerStreamName);
   }
 
+  // Runtime additive-subscribe seam (#282): delegate to the underlying startupService like the
+  // other optional seams. Declared optional on IStartupService and called via `addConsumers!(...)`
+  // at the call sites, so without this pass-through the wrapper compiled clean but threw
+  // `addConsumers is not a function` at runtime on a network-map reload.
+  async addConsumers(subjects: string[], onMessage: onMessageFunction): Promise<boolean> {
+    return await this.startupService.addConsumers!(subjects, onMessage);
+  }
+
   async initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean> {
     process.on('uncaughtException', (): void => {
       this.startupService.initProducer(loggerService, parProducerStreamName);
