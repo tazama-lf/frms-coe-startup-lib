@@ -100,7 +100,53 @@ CONSUMER_STREAM=ConsumerA,ConsumerB,ConsumerC
 Will configure `ConsumerA`, `ConsumerB` and `ConsumerC` as consumers.
 
 #### `parProducerStreamName`
-If provided in the call to `init()`, this will be a subject to listen for messages on. If not provided, an environment variable: `PRODUCER_STREAM`, is read.
+Optional. Sets a **default** publish destination used by `handleResponse` only when no explicit subject is supplied. If omitted here, the `PRODUCER_STREAM` environment variable is read instead. Either source is optional: a content-based router that always passes explicit subjects to `handleResponse` does not need a producer stream at all. When neither a producer stream nor an explicit subject is available, `handleResponse` throws rather than silently dropping the message.
+
+### **Service Channel Transport**
+
+In addition to the transaction plane (`init` / `initProducer` / `handleResponse`), the library exposes a separate **service-channel** transport for out-of-band, broadcast-style messaging (for example, configuration hot-reload notifications). It runs on the same NATS server (reusing `SERVER_URL`) but is deliberately distinct from the transaction plane:
+
+- **Opaque bytes**: the service channel carries a raw `Uint8Array` / `Buffer`. Unlike the transaction plane, it does **not** protobuf-encode or decode - the producer publishes your bytes verbatim and the consumer hands `message.data` to your handler un-decoded. Serialization (and any envelope contract) belongs entirely to the caller.
+- **Broadcast fan-out**: `initServiceChannel` subscribes with **no queue group**, so every running instance on a subject receives every message (unlike the transaction plane's load-balanced `{ queue: FUNCTION_NAME }` pattern). This lets each instance reload its own in-memory state.
+- **Degrade-not-throw**: a failed service-channel connect is logged and non-fatal - the host service keeps running its transaction-plane work. nats.js default auto-reconnect handles later drops.
+- **Split producer / consumer roles**: a service sets `SERVICE_CHANNEL_PRODUCER` (the subject it publishes to) and/or `SERVICE_CHANNEL_CONSUMER` (the subject it subscribes to). These two subjects **must differ** - the invariant is enforced at config load (the service throws on startup if `SERVICE_CHANNEL_PRODUCER` equals `SERVICE_CHANNEL_CONSUMER`), so a service never delivers its own messages back to itself.
+
+The three primitives are reachable through `StartupFactory`:
+
+```typescript
+import { StartupFactory } from '@tazama-lf/frms-coe-startup-lib';
+
+const service = new StartupFactory();
+
+// Producer side - connect once (degrade-not-throw)
+await service.initServiceChannelProducer();
+// Publish opaque bytes (subject defaults to SERVICE_CHANNEL_PRODUCER when omitted)
+await service.publishServiceChannel(new Uint8Array([1, 2, 3]));
+
+// Consumer side - subscribe with no queue group (subject defaults to SERVICE_CHANNEL_CONSUMER)
+await service.initServiceChannel((data: Uint8Array) => {
+  // data is the raw payload, un-decoded
+  console.log('service-channel message', data);
+});
+```
+
+`publishServiceChannel` and `initServiceChannel` each accept an explicit `subject` argument; when omitted it falls back to the configured env var (`SERVICE_CHANNEL_PRODUCER` and `SERVICE_CHANNEL_CONSUMER` respectively) and throws if neither is set. `initServiceChannelProducer` takes no subject - it only opens the service-channel connection. The optional `SERVICE_CHANNEL_SOURCE_URI_PREFIX` (default `''`) is the deployment-wide `source`-URI prefix used by callers to compose a CloudEvents `source` from their `/`-free `FUNCTION_NAME`.
+
+> **Note:** `FUNCTION_NAME` is now enforced `/`-free at startup (it may still contain dots, e.g. `typology-001@1.0.0`). A `FUNCTION_NAME` containing `/` fails fast at load time.
+
+### **Runtime Additive Subscribe (`addConsumers`)**
+
+`addConsumers` is the runtime sibling of `init`. Where `init` stands the transaction-plane consumers up at startup, `addConsumers` extends them on the **already-running** connection without reconnecting or tearing down existing subscriptions - the additive half of a make-before-break re-subscribe (for example, after a network-map reload adds new rule subjects).
+
+```typescript
+// Already initialised via init(...). On a reload, add the newly required subjects:
+const added = await service.addConsumers(['pub-rule-123', 'pub-rule-456'], handleTransaction);
+```
+
+- **Additive only**: new, non-empty subjects not already in `consumerStreamName` are subscribed with the same load-balanced `{ queue: FUNCTION_NAME }` group as `init` and wired into the existing consume loop; `consumerStreamName` is extended with them.
+- **Idempotent**: subjects already subscribed, empty strings, and repeats within the input are skipped - no duplicate subscriptions.
+- **No teardown**: existing subscriptions (transaction-plane and service-channel) are left intact; there is no reconnect and no unsubscribe/drain. Removing stale subjects is intentionally out of scope.
+- **Guarded**: called with no live connection, it logs and returns `false` without throwing. Returns `true` once the additive subscribe completes, including no-ops.
 
 ## Modules and Classes
 
@@ -110,8 +156,12 @@ If provided in the call to `init()`, this will be a subject to listen for messag
     - **Description**: Manages the initialization and handling of the message broker
     - **Methods**:
       - `init(onMessage: onMessageFunction, loggerService?: ILoggerService, parConsumerStreamNames?: string[], parProducerStreamName?: string): Promise<boolean>`: Initializes the startup service.
+      - `addConsumers(subjects: string[], onMessage: onMessageFunction): Promise<boolean>`: Additively subscribes to new transaction-plane subjects at runtime without reconnecting or tearing down existing subscriptions; idempotent, returns `false` if not connected.
       - `initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean>`: Initializes the producer stream.
       - `handleResponse(response: object, subject?: string[]): Promise<void>`: Handles responses from the startup service.
+      - `initServiceChannelProducer(loggerService?: ILoggerService): Promise<boolean>`: Connects the service-channel producer (degrade-not-throw).
+      - `publishServiceChannel(body: Uint8Array, subject?: string): Promise<void>`: Publishes opaque bytes to a service-channel subject.
+      - `initServiceChannel(onMessage: (data: Uint8Array) => void | Promise<void>, subject?: string, loggerService?: ILoggerService): Promise<boolean>`: Subscribes (no queue group) to a service-channel subject.
 
 2. **NATS Service**
 
@@ -119,9 +169,13 @@ If provided in the call to `init()`, this will be a subject to listen for messag
     - **Description**: Manages the initialization and handling of NATS services, including subscribing and publishing messages.
     - **Methods**:
       - `init(onMessage: onMessageFunction, loggerService?: ILoggerService, parConsumerStreamNames?: string[], parProducerStreamName?: string): Promise<boolean>`: Initializes the NATS service.
+      - `addConsumers(subjects: string[], onMessage: onMessageFunction): Promise<boolean>`: Additively subscribes to new transaction-plane subjects on the running connection (idempotent, make-before-break); returns `false` when there is no live connection.
       - `initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean>`: Initializes the producer stream for NATS.
-      - `handleResponse(response: object, subject?: string[]): Promise<void>`: Handles responses and publishes them to the producer stream.
+      - `handleResponse(response: object, subject?: string[]): Promise<void>`: Publishes a response. When one or more explicit `subject`s are supplied, it publishes to each of them (run-time, per-message routing); otherwise it falls back to the configured `PRODUCER_STREAM`. With neither an explicit subject nor a configured producer stream, it throws. A no-op when there is no active connection.
       - `subscribe(subscription: Subscription, onMessage: onMessageFunction): Promise<void>`: Subscribes to a NATS subject and processes incoming messages.
+      - `initServiceChannelProducer(loggerService?: ILoggerService): Promise<boolean>`: Connects the service-channel producer; a failed connect is logged and non-fatal.
+      - `publishServiceChannel(body: Uint8Array, subject?: string): Promise<void>`: Publishes the caller's bytes verbatim (no protobuf) to a service-channel subject.
+      - `initServiceChannel(onMessage: (data: Uint8Array) => void | Promise<void>, subject?: string, loggerService?: ILoggerService): Promise<boolean>`: Subscribes with no queue group (broadcast fan-out) and hands raw `message.data` to the handler.
 
 3. **Interfaces**
 
@@ -137,12 +191,19 @@ If provided in the call to `init()`, this will be a subject to listen for messag
       - `env: string`: Environment.
       - `functionName: string`: Queue name for NATS messages
       - `streamSubject: string`: Stream subject.
+      - `serviceChannelProducer: string`: Service-channel subject this service publishes to (`SERVICE_CHANNEL_PRODUCER`).
+      - `serviceChannelConsumer: string`: Service-channel subject this service subscribes to (`SERVICE_CHANNEL_CONSUMER`).
+      - `serviceChannelSourceUriPrefix: string`: Deployment-wide `source`-URI prefix (`SERVICE_CHANNEL_SOURCE_URI_PREFIX`, default `''`).
 
   - **Interface**: IStartupService
     - **Methods**:
       - `init(onMessage: onMessageFunction, loggerService?: ILoggerService, parConsumerStreamNames?: string[], parProducerStreamName?: string): Promise<boolean>`: Initializes the startup service.
+      - `addConsumers?(subjects: string[], onMessage: onMessageFunction): Promise<boolean>`: (optional) Additively subscribes to new transaction-plane subjects on the already-running connection; idempotent, no-teardown, guarded (returns `false` if not connected).
       - `initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean>`: Initializes the producer stream.
       - `handleResponse(response: object, subject?: string[]): Promise<void>`: Handles responses.
+      - `initServiceChannelProducer?(loggerService?: ILoggerService): Promise<boolean>`: (optional) Connects the service-channel producer.
+      - `publishServiceChannel?(body: Uint8Array, subject?: string): Promise<void>`: (optional) Publishes opaque bytes to a service-channel subject.
+      - `initServiceChannel?(onMessage: (data: Uint8Array) => void | Promise<void>, subject?: string, loggerService?: ILoggerService): Promise<boolean>`: (optional) Subscribes to a service-channel subject.
 
   - **Interface**: ILoggerService
     - **Methods**:
@@ -248,9 +309,15 @@ The `frms-coe-startup-lib` library uses environment variables to configure the s
 
 - `NODE_ENV`: The node environment (`development`, `production`, etc.).
 - `SERVER_URL`: The URL of the server (e.g., NATS server).
-- `FUNCTION_NAME`: The name of the function or service.
-- `PRODUCER_STREAM`: The name of the producer stream.
+- `FUNCTION_NAME`: The name of the function or service. Enforced `/`-free at startup (dots are allowed).
+- `PRODUCER_STREAM`: Optional. The default producer stream used by `handleResponse` when no explicit subject is supplied. Services that route every message to a run-time-computed subject can leave this unset.
 - `CONSUMER_STREAM`: The name of the consumer stream.
+
+#### Service Channel Variables
+
+- `SERVICE_CHANNEL_PRODUCER`: Optional. The service-channel subject this service publishes to. Required only when the service-channel publish primitive is used without an explicit subject.
+- `SERVICE_CHANNEL_CONSUMER`: Optional. The service-channel subject this service subscribes to. Required only when the service-channel subscribe primitive is used without an explicit subject.
+- `SERVICE_CHANNEL_SOURCE_URI_PREFIX`: Optional (default `''`). Deployment-wide `source`-URI prefix concatenated with `FUNCTION_NAME` to compose a CloudEvents `source`.
 
 ### Relay Environment Variables
 
@@ -284,7 +351,7 @@ Logging can be configured using environment variables or configuration files. Op
 
 ### Stream and Subject Configuration
 
-The library can be configured to interact with specific streams and subjects in the message broker. These are specified using the `PRODUCER_STREAM` and `CONSUMER_STREAM` environment variables.
+The library can be configured to interact with specific streams and subjects in the message broker. These are specified using the `PRODUCER_STREAM` and `CONSUMER_STREAM` environment variables. `CONSUMER_STREAM` is required to subscribe; `PRODUCER_STREAM` is an optional default destination - it is only consulted by `handleResponse` when the caller does not supply an explicit subject.
 
 ## Contributing
 
