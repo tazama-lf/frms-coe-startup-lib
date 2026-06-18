@@ -149,7 +149,10 @@ export class NatsService implements IStartupService {
    * NODE_ENV=debug
    * SERVER_URL=0.0.0.0:4222 - Nats Server URL
    * FUNCTION_NAME=function_name - Function Name is used to determine streams.
-   * PRODUCER_STREAM - Stream name for the producer Stream
+   *
+   * PRODUCER_STREAM is optional: it is no longer enforced at startup (see validateEnvironment).
+   * It is only required at publish time when handleResponse is called without an explicit subject,
+   * in which case it is the fallback publish destination.
    *
    * @return {*}  {Promise<boolean>}
    */

@@ -194,12 +194,18 @@ describe('service-channel required-when-used config enforcement (AC#5)', () => {
 
 describe('service-channel logging (AC#7)', () => {
   it('logs the connection lifecycle on producer init', async () => {
+    // getLogger swaps to console when env is 'test'/'dev' (see src/utils.ts), so the lifecycle
+    // lines land on console.log here regardless of the injected logger. Assert on the specific
+    // lifecycle message content - not a bare call count - so the test is deterministic to the
+    // service-channel contract and cannot pass on unrelated console noise.
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
     const svc = makeService();
 
     await svc.initServiceChannelProducer(logger);
 
-    expect(logSpy.mock.calls.length).toBeGreaterThan(0);
+    const messages = logSpy.mock.calls.map((call) => String(call[0]));
+    expect(messages.some((message) => /service-channel connection/i.test(message))).toBe(true);
+    expect(messages.some((message) => /service channel connected/i.test(message))).toBe(true);
     logSpy.mockRestore();
   });
 });

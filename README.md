@@ -198,6 +198,7 @@ const added = await service.addConsumers(['pub-rule-123', 'pub-rule-456'], handl
   - **Interface**: IStartupService
     - **Methods**:
       - `init(onMessage: onMessageFunction, loggerService?: ILoggerService, parConsumerStreamNames?: string[], parProducerStreamName?: string): Promise<boolean>`: Initializes the startup service.
+      - `addConsumers?(subjects: string[], onMessage: onMessageFunction): Promise<boolean>`: (optional) Additively subscribes to new transaction-plane subjects on the already-running connection; idempotent, no-teardown, guarded (returns `false` if not connected).
       - `initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean>`: Initializes the producer stream.
       - `handleResponse(response: object, subject?: string[]): Promise<void>`: Handles responses.
       - `initServiceChannelProducer?(loggerService?: ILoggerService): Promise<boolean>`: (optional) Connects the service-channel producer.
