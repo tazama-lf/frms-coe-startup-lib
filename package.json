@@ -1,6 +1,6 @@
 {
   "name": "@tazama-lf/frms-coe-startup-lib",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Tazama startup package library",
   "main": "lib/index.js",
   "repository": {
@@ -16,6 +16,7 @@
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",
+    "publish:dev": "npm publish --tag rc",
     "clean": "npx rimraf lib node_modules coverage package-lock.json",
     "dry": "npm publish --dry-run",
     "test": "jest --config=jest.config.ts --passWithNoTests",
@@ -29,13 +30,14 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@google-cloud/bigquery": "^8.1.1",
-    "@google-cloud/storage": "^7.16.0",
-    "@tazama-lf/frms-coe-lib": "6.0.0",
+    "@tazama-lf/frms-coe-lib": "8.2.0",
     "amqplib": "0.10.6",
-    "axios": "^1.12.2",
-    "google-auth-library": "^10.2.0",
+    "axios": "^1.18.1",
     "nats": "^2.29.3"
+  },
+  "overrides": {
+    "uuid": "^11.1.1",
+    "@opentelemetry/core": "^2.8.0"
   },
   "keywords": [],
   "author": "Tazama.org",

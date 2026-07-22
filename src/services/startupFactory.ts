@@ -3,20 +3,24 @@
 import type { IStartupService, onMessageFunction } from '..';
 import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
-import { JetstreamService } from './jetstreamService';
 import { NatsService } from './natsService';
 
 export class StartupFactory implements IStartupService {
   startupService: IStartupService;
   /**
-   *  Initializes a new startup service which would either be a Jetstream or Nats server, depending on the configurd SERVER_TYPE env variable ('nats' | 'jestream')
+   *  Initializes a new NATS startup service. NATS is the only supported transport; the switch retains a
+   *  default arm so any unexpected startupType still resolves to NatsService rather than leaving the
+   *  service undefined.
    */
   constructor() {
-    switch (startupConfig.startupType) {
-      case 'jetstream':
-        this.startupService = new JetstreamService();
-        break;
+    // startupType is typed 'nats', but it is cast to string here so the default arm remains a genuine
+    // runtime guard against any unexpected value (defence-in-depth) without tripping the
+    // switch-exhaustiveness check.
+    switch (startupConfig.startupType as string) {
       case 'nats':
+        this.startupService = new NatsService();
+        break;
+      default:
         this.startupService = new NatsService();
         break;
     }
@@ -39,6 +43,14 @@ export class StartupFactory implements IStartupService {
     return await this.startupService.init(onMessage, loggerService, parConsumerStreamNames, parProducerStreamName);
   }
 
+  // Runtime additive-subscribe seam (#282): delegate to the underlying startupService like the
+  // other optional seams. Declared optional on IStartupService and called via `addConsumers!(...)`
+  // at the call sites, so without this pass-through the wrapper compiled clean but threw
+  // `addConsumers is not a function` at runtime on a network-map reload.
+  async addConsumers(subjects: string[], onMessage: onMessageFunction): Promise<boolean> {
+    return await this.startupService.addConsumers!(subjects, onMessage);
+  }
+
   async initProducer(loggerService?: ILoggerService, parProducerStreamName?: string): Promise<boolean> {
     process.on('uncaughtException', (): void => {
       this.startupService.initProducer(loggerService, parProducerStreamName);
@@ -53,5 +65,24 @@ export class StartupFactory implements IStartupService {
 
   async handleResponse(response: object, subject?: string[]): Promise<void> {
     await this.startupService.handleResponse(response, subject);
+  }
+
+  // Service-channel transport (Part B, #279): thin pass-throughs to the single underlying
+  // startupService. No separate channel instance, no wrap-and-throw, no process.on restart hooks -
+  // the service channel is a secondary, degrade-not-throw channel.
+  async initServiceChannelProducer(loggerService?: ILoggerService): Promise<boolean> {
+    return await this.startupService.initServiceChannelProducer!(loggerService);
+  }
+
+  async publishServiceChannel(body: Uint8Array, subject?: string): Promise<void> {
+    await this.startupService.publishServiceChannel!(body, subject);
+  }
+
+  async initServiceChannel(
+    onMessage: (data: Uint8Array) => void | Promise<void>,
+    subject?: string,
+    loggerService?: ILoggerService,
+  ): Promise<boolean> {
+    return await this.startupService.initServiceChannel!(onMessage, subject, loggerService);
   }
 }
