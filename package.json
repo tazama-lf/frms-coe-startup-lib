@@ -37,7 +37,8 @@
   },
   "overrides": {
     "uuid": "^11.1.1",
-    "@opentelemetry/core": "^2.8.0"
+    "@opentelemetry/core": "^2.8.0",
+    "fast-uri": "3.1.5"
   },
   "keywords": [],
   "author": "Tazama.org",
