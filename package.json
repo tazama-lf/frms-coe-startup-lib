@@ -44,7 +44,7 @@
   "author": "Tazama.org",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@eslint-community/eslint-plugin-eslint-comments": "^4.5.0",
+    "@eslint-community/eslint-plugin-eslint-comments": "^4.7.2",
     "@stylistic/eslint-plugin": "^5.4.0",
     "@types/amqplib": "0.10.6",
     "@types/jest": "^30.0.0",
