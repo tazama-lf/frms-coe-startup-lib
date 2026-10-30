@@ -5,6 +5,12 @@
 // subscribers on one subject fan-out exactly like a real NATS server - which is
 // what the no-queue-group broadcast proof (AC#4) needs to assert.
 
+import type { ConnectionOptions } from 'nats';
+
+type AuthenticatedConnectionOptions = ConnectionOptions & {
+  tls: { ca: string; cert: string; key: string };
+};
+
 export interface FakeMsg {
   subject: string;
   data: Uint8Array;
@@ -115,11 +121,13 @@ export function makeFakeNats(): Record<string, unknown> {
   const actual = jest.requireActual('nats') as Record<string, unknown>;
   const broker = new FakeBroker();
 
+  function connectImpl(options: AuthenticatedConnectionOptions): Promise<FakeConnection>;
+  function connectImpl(options?: ConnectionOptions): Promise<FakeConnection>;
   // eslint-disable-next-line @typescript-eslint/require-await -- mirrors the async nats connect() signature
-  const connectImpl = async (): Promise<FakeConnection> => {
+  async function connectImpl(_options?: ConnectionOptions): Promise<FakeConnection> {
     if (broker.connectShouldFail) throw new Error('simulated connect failure');
     return new FakeConnection(broker);
-  };
+  }
   const connect = jest.fn(connectImpl);
 
   return {

@@ -8,6 +8,7 @@ import type { IStartupService } from '..';
 import { createMessageBuffer, decodeMessageBuffer } from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
 //import { FRMSMessage } from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
 import { getLogger } from '../utils';
+import { readFileSync } from 'node:fs';
 
 export class NatsService implements IStartupService {
   server = {
@@ -163,7 +164,22 @@ export class NatsService implements IStartupService {
     try {
       // Connect to NATS Server
       this.logger.log(`Attempting connection to NATS, with config:\n${JSON.stringify(startupConfig)}`);
-      this.NatsConn = await connect(this.server);
+
+      if (!startupConfig.natsAuthenticated) {
+        this.NatsConn = await connect({
+          servers: [this.server.servers],
+        });
+      } else {
+        this.NatsConn = await connect({
+          servers: [this.server.servers],
+          tls: {
+            ca: readFileSync(startupConfig.natsCertificateAuthorityPath, 'utf8'),
+            cert: readFileSync(startupConfig.natsClientCertPath, 'utf8'),
+            key: readFileSync(startupConfig.natsClientKeyPath, 'utf8'),
+          },
+        });
+      }
+
       this.logger.log(`Connected to ${this.NatsConn.getServer()}`);
       this.functionName = startupConfig.functionName.replace(/\./g, '_');
 

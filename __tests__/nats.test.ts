@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
+export {};
+
 // nats is mocked in setup.jest.js.
 //
 // These tests encode the post-hardening contract for issue #276:
