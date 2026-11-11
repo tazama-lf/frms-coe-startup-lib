@@ -1,9 +1,9 @@
-import { connect, type NatsConnection } from 'nats';
+import type { NatsConnection } from 'nats';
 import { relayConfig } from '../interfaces/iRelayConfig';
 import type { IRelay } from '../interfaces/iRelayService';
 import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
-import { getLogger } from '../utils';
+import { connectToNats, getLogger, getNatsTlsOptions } from '../utils';
 
 export class NatsRelay implements IRelay {
   private readonly config = relayConfig;
@@ -13,9 +13,7 @@ export class NatsRelay implements IRelay {
   async init(loggerService?: ILoggerService): Promise<void> {
     this.logger = getLogger(startupConfig, loggerService);
 
-    this.NatsConn_Producer = await connect({
-      servers: this.config.destinationUrl,
-    });
+    this.NatsConn_Producer = await connectToNats(this.config.destinationUrl, getNatsTlsOptions(this.config));
     this.logger.log(`[TRS]: Connected to Client NATS: ${JSON.stringify(this.NatsConn_Producer.info, null, 4)}`);
   }
   async relay(data: Uint8Array): Promise<void> {

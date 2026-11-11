@@ -43,6 +43,18 @@ export interface IStartupConfig {
    */
   serverUrl: string;
 
+  /** Whether NATS authentication is enabled (`NATS_AUTHENTICATED`). Defaults to false. */
+  natsAuthenticated: boolean;
+
+  /** NATS certificate authority file path (`NATS_CERTIFICATE_AUTHORITY_PATH`). Defaults to ''. */
+  natsCertificateAuthorityPath: string;
+
+  /** NATS client private key file path (`NATS_CLIENT_KEY_PATH`). Defaults to ''. */
+  natsClientKeyPath: string;
+
+  /** NATS client certificate file path (`NATS_CLIENT_CERT_PATH`). Defaults to ''. */
+  natsClientCertPath: string;
+
   /**
    *env: <string>process.env.NODE_ENV
    *
@@ -101,6 +113,10 @@ export const startupConfig: IStartupConfig = {
   startupType: 'nats',
   env: validateEnvVar('NODE_ENV', 'string').toString(),
   serverUrl: validateEnvVar('SERVER_URL', 'string').toString(),
+  natsAuthenticated: validateEnvVar('NATS_AUTHENTICATED', 'boolean', true) === true,
+  natsCertificateAuthorityPath: validateEnvVar('NATS_CERTIFICATE_AUTHORITY_PATH', 'string', true).toString(),
+  natsClientKeyPath: validateEnvVar('NATS_CLIENT_KEY_PATH', 'string', true).toString(),
+  natsClientCertPath: validateEnvVar('NATS_CLIENT_CERT_PATH', 'string', true).toString(),
   functionName: validateFunctionName(),
   producerStreamName: validateEnvVar('PRODUCER_STREAM', 'string', true).toString(),
   consumerStreamName: validateEnvVar('CONSUMER_STREAM', 'string', true).toString(),

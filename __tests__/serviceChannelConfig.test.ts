@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
+export {};
+
 // Red-first tests for the service-channel config surface (frms-coe-startup-lib#279, Part B).
 // startupConfig is a module-load singleton, so each case sets process.env and
 // re-imports iStartupConfig inside jest.isolateModules to get a fresh read.

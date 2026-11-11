@@ -321,11 +321,19 @@ The `frms-coe-startup-lib` library uses environment variables to configure the s
 
 ### Relay Environment Variables
 
-- `DESTINATION_URL`: Specifies the startup type (`nats`).
-- `DESTINATION_TYPE`: The node environment (`development`, `production`, etc.).
+- `DESTINATION_URL`: The downstream server URL.
+- `DESTINATION_TYPE`: The downstream transport (`nats`, `rabbitmq`, or `rest`).
 
 #### NATS-Specific Relay Variables
-- `PRODUCER_STREAM`: The destination to relay messages to
+- `PRODUCER_STREAM`: The destination to relay messages to.
+- `DESTINATION_NATS_AUTHENTICATED`: Enable TLS client authentication for the downstream NATS server (default `false`).
+- `DESTINATION_NATS_CERTIFICATE_AUTHORITY_PATH`: Downstream CA certificate file path.
+- `DESTINATION_NATS_CLIENT_CERT_PATH`: Downstream client certificate file path.
+- `DESTINATION_NATS_CLIENT_KEY_PATH`: Downstream client private key file path.
+
+The startup connection (`SERVER_URL`) uses `NATS_AUTHENTICATED`, `NATS_CERTIFICATE_AUTHORITY_PATH`, `NATS_CLIENT_CERT_PATH`, and `NATS_CLIENT_KEY_PATH`. The relay connection (`DESTINATION_URL`) uses the independent `DESTINATION_NATS_*` settings above. Either connection can use TLS while the other connects without TLS options, or both can use different certificates. Certificate files are read only when authentication is enabled for that connection.
+
+`connectToNats(servers, tlsOpts?)` accepts NATS `TlsOptions` per call. Omitting `tlsOpts` connects without TLS options; the utility does not read global authentication settings.
 
 #### Rest-Specific Relay Variables
 - `JSON_PAYLOAD`: Convert the message to json before relaying

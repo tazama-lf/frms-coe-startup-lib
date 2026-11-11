@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { connect, type NatsConnection, type Subscription } from 'nats';
+import type { NatsConnection, Subscription } from 'nats';
 import type { ILoggerService } from '../interfaces';
 import { startupConfig } from '../interfaces/iStartupConfig';
 import type { onMessageFunction } from '../types/onMessageFunction';
 import type { IStartupService } from '..';
 import { createMessageBuffer, decodeMessageBuffer } from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
 //import { FRMSMessage } from '@tazama-lf/frms-coe-lib/lib/helpers/protobuf';
-import { getLogger } from '../utils';
+import { connectToNats, getLogger, getNatsTlsOptions } from '../utils';
 
 export class NatsService implements IStartupService {
   server = {
@@ -163,7 +163,9 @@ export class NatsService implements IStartupService {
     try {
       // Connect to NATS Server
       this.logger.log(`Attempting connection to NATS, with config:\n${JSON.stringify(startupConfig)}`);
-      this.NatsConn = await connect(this.server);
+
+      this.NatsConn = await connectToNats(this.server.servers, getNatsTlsOptions(startupConfig));
+
       this.logger.log(`Connected to ${this.NatsConn.getServer()}`);
       this.functionName = startupConfig.functionName.replace(/\./g, '_');
 
@@ -244,7 +246,7 @@ export class NatsService implements IStartupService {
     this.logger = getLogger(startupConfig, loggerService);
     try {
       this.logger.log(`Attempting service-channel connection to NATS on: ${JSON.stringify(this.server)}`);
-      this.NatsConn = await connect(this.server);
+      this.NatsConn = await connectToNats(this.server.servers, getNatsTlsOptions(startupConfig));
       this.logger.log(`Service channel connected to ${this.NatsConn.getServer()}`);
       this.functionName = startupConfig.functionName.replace(/\./g, '_');
 
